@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB;
 
 INSERT INTO users (username, password, nama_lengkap, email, role) VALUES
-('admin','$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW','Administrator','admin@smkn1bekasi.sch.id','admin');
+('admin','$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW','Administrator','adminsmkn1bekasi.sch.id','admin');
 
 -- ============================================================
 -- TABLE: barang
