@@ -88,7 +88,7 @@ qr_data = f"http://192.168.1.5:5000/barang/detail/{kode_barang}"
 
 | Username | Password |
 |----------|----------|
-| admin    | admin123 |
+| admin    | secret |
 
 > **Catatan:** Password `admin123` di database.sql sudah berbentuk bcrypt hash.
 > Untuk generate hash baru, jalankan di Python:
