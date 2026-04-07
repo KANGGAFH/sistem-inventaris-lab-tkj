@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>404 — Halaman Tidak Ditemukan | SIM Lab Komputer</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+  <!-- Custom CSS -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+
+  <style>
+    /* ── 404 Page Styles ─────────────────────────────── */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0f4ff 0%, #fafbff 50%, #f0f2f8 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 2rem;
+    }
+
+    .error-wrapper {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    /* Animated 404 number */
+    .error-code {
+      font-size: 8rem;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, #4361ee, #7209b7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      animation: floatUp 3s ease-in-out infinite;
+    }
+
+    @keyframes floatUp {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    /* Icon di tengah angka 0 */
+    .error-icon-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, #ef233c, #b20020);
+      border-radius: 50%;
+      margin: 0 8px;
+      box-shadow: 0 8px 32px rgba(239, 35, 60, 0.35);
+      animation: floatUp 3s ease-in-out infinite;
+      animation-delay: .15s;
+    }
+
+    .error-icon-wrap i {
+      font-size: 2.4rem;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+    }
+
+    .error-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 40px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      margin-top: 1.5rem;
+    }
+
+    .error-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: .5rem;
+    }
+
+    .error-subtitle {
+      font-size: .9rem;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .error-divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 1.5rem 0;
+    }
+
+    .error-info {
+      background: #f8faff;
+      border: 1.5px solid #e0e7ff;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: .82rem;
+      color: #4361ee;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .error-info i { margin-right: 6px; }
+
+    .error-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-home {
+      background: linear-gradient(135deg, #4361ee, #7209b7);
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: .875rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .2s;
+      box-shadow: 0 4px 14px rgba(67, 97, 238, 0.3);
+    }
+    .btn-home:hover {
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+    }
+
+    .btn-back {
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: .875rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .2s;
+    }
+    .btn-back:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+
+    .error-footer {
+      margin-top: 2rem;
+      font-size: .75rem;
+      color: #94a3b8;
+    }
+
+    .error-footer span {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #64748b;
+    }
+
+    /* Decorative dots background */
+    .dot-pattern {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: .4;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Background pattern -->
+  <div class="dot-pattern"></div>
+
+  <div class="error-wrapper">
+
+    <!-- 404 Number -->
+    <div class="error-code">
+      4
+      <span class="error-icon-wrap">
+        <i class="bi bi-exclamation-lg"></i>
+      </span>
+      4
+    </div>
+
+    <!-- Error Card -->
+    <div class="error-card">
+      <h1 class="error-title">Halaman Tidak Ditemukan</h1>
+      <p class="error-subtitle">
+        Halaman yang Anda cari tidak tersedia atau kode QR yang di-scan
+        tidak terdaftar dalam sistem inventaris lab.
+      </p>
+
+      <!-- Info box -->
+      <div class="error-info">
+        <i class="bi bi-info-circle-fill"></i>
+        Kemungkinan penyebab: QR Code sudah tidak aktif, barang telah dihapus
+        dari sistem, atau URL diakses secara manual dengan kode yang salah.
+      </div>
+
+      <div class="error-divider"></div>
+
+      <!-- Action Buttons -->
+      <div class="error-actions">
+        <a href="/" class="btn-home">
+          <i class="bi bi-house-fill"></i> Kembali ke Dashboard
+        </a>
+        <a href="javascript:history.back()" class="btn-back">
+          <i class="bi bi-arrow-left"></i> Halaman Sebelumnya
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer info -->
+    <div class="error-footer">
+      SIM Lab Komputer — SMKN 1 Cikarang Selatan &nbsp;|&nbsp;
+      <span>HTTP 404 Not Found</span>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Scan QR Code{% endblock %}
+{% block page_title %}Scan QR Code{% endblock %}
+
+{% block head %}
+<!-- html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7 col-lg-8">
+
+    <!-- SCANNER CARD -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-qr-code-scan me-2"></i>Scanner QR Code</h6>
+        <span class="scanner-status" id="scannerStatus">
+          <span class="status-dot"></span> Siap
+        </span>
+      </div>
+      <div class="panel-body">
+
+        <div class="scanner-area" id="scannerArea">
+          <div id="qr-reader"></div>
+          <div class="scanner-overlay" id="scannerOverlay">
+            <div class="scanner-frame">
+              <div class="scanner-corner tl"></div>
+              <div class="scanner-corner tr"></div>
+              <div class="scanner-corner bl"></div>
+              <div class="scanner-corner br"></div>
+              <div class="scanner-line"></div>
+            </div>
+            <p class="scanner-hint">Arahkan kamera ke QR Code barang</p>
+          </div>
+        </div>
+
+        <div class="scanner-controls mt-3 text-center">
+          <button class="btn-primary-custom me-2" id="btnStart" onclick="startScanner()">
+            <i class="bi bi-camera-fill me-1"></i> Mulai Scan
+          </button>
+          <button class="btn-outline-custom" id="btnStop" onclick="stopScanner()" style="display:none;">
+            <i class="bi bi-stop-circle me-1"></i> Stop
+          </button>
+        </div>
+
+        <!-- Manual Input -->
+        <div class="manual-input-section mt-4">
+          <div class="divider-text">atau input manual</div>
+          <div class="d-flex gap-2 mt-3">
+            <input type="text" id="manualKode" class="form-control form-control-custom"
+                   placeholder="Masukkan kode barang (contoh: INV-20240101-0001)"/>
+            <button class="btn-primary-custom" onclick="searchManual()">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT CARD -->
+    <div class="card-panel" id="resultCard" style="display:none;">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-check-circle-fill me-2 text-success"></i>Hasil Scan</h6>
+        <button class="btn-outline-custom btn-sm-custom" onclick="resetResult()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Scan Lagi
+        </button>
+      </div>
+      <div class="panel-body" id="resultContent">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- NOT FOUND CARD -->
+    <div class="card-panel" id="notFoundCard" style="display:none;">
+      <div class="panel-body text-center py-4">
+        <i class="bi bi-x-circle-fill display-5 text-danger mb-3 d-block"></i>
+        <h6 class="fw-700">Barang Tidak Ditemukan</h6>
+        <p class="text-muted" id="notFoundMessage">Kode QR tidak terdaftar dalam sistem.</p>
+        <button class="btn-primary-custom mt-2" onclick="resetResult()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Scan Lagi
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let html5QrcodeScanner = null;
+let isScanning = false;
+let lastScanned = '';
+
+// ── Mulai Scanner ────────────────────────────────────────
+function startScanner() {
+  document.getElementById('scannerOverlay').style.display = 'none';
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('btnStop').style.display = 'inline-flex';
+  document.getElementById('scannerStatus').innerHTML = '<span class="status-dot active"></span> Scanning...';
+
+  html5QrcodeScanner = new Html5Qrcode("qr-reader");
+
+  Html5Qrcode.getCameras().then(cameras => {
+    if (!cameras || cameras.length === 0) {
+      alert('Tidak ada kamera yang terdeteksi.');
+      stopScanner();
+      return;
+    }
+    // Prefer back camera on mobile
+    const cam = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[cameras.length - 1];
+
+    html5QrcodeScanner.start(
+      cam.id,
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (decodedText) => onScanSuccess(decodedText),
+      () => {}
+    ).catch(err => {
+      console.error('Scanner error:', err);
+      stopScanner();
+    });
+    isScanning = true;
+  }).catch(err => {
+    alert('Tidak dapat mengakses kamera: ' + err);
+    stopScanner();
+  });
+}
+
+// ── Stop Scanner ─────────────────────────────────────────
+function stopScanner() {
+  if (html5QrcodeScanner && isScanning) {
+    html5QrcodeScanner.stop().then(() => {
+      html5QrcodeScanner.clear();
+    }).catch(() => {});
+    isScanning = false;
+  }
+  document.getElementById('btnStart').style.display = 'inline-flex';
+  document.getElementById('btnStop').style.display = 'none';
+  document.getElementById('scannerStatus').innerHTML = '<span class="status-dot"></span> Siap';
+  document.getElementById('scannerOverlay').style.display = 'flex';
+}
+
+// ── Saat QR berhasil di-scan ─────────────────────────────
+function onScanSuccess(decodedText) {
+  if (decodedText === lastScanned) return;
+  lastScanned = decodedText;
+
+  stopScanner();
+
+  // Ekstrak kode barang dari URL atau langsung sebagai kode
+  let kode = decodedText;
+  const urlMatch = decodedText.match(/\/barang\/detail\/([A-Z0-9\-]+)/);
+  if (urlMatch) kode = urlMatch[1];
+
+  fetchBarang(kode);
+}
+
+// ── Input Manual ─────────────────────────────────────────
+function searchManual() {
+  const kode = document.getElementById('manualKode').value.trim().toUpperCase();
+  if (!kode) return;
+  fetchBarang(kode);
+}
+
+// ── Fetch Data Barang via API ─────────────────────────────
+function fetchBarang(kode) {
+  fetch(`/api/barang/${kode}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'found') {
+        showResult(data.data);
+      } else {
+        showNotFound(kode);
+      }
+    })
+    .catch(() => showNotFound(kode));
+}
+
+// ── Tampilkan Hasil ──────────────────────────────────────
+function showResult(b) {
+  const kondisiClass = {
+    'Baik': 'kondisi-baik',
+    'Rusak Ringan': 'kondisi-ringan',
+    'Rusak Berat': 'kondisi-berat'
+  }[b.kondisi] || 'kondisi-baik';
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="result-grid">
+      <div class="result-qr">
+        ${b.qr_path
+          ? `<img src="/static/${b.qr_path}" alt="QR" class="result-qr-img"/>`
+          : '<div class="no-qr"><i class="bi bi-qr-code"></i></div>'
+        }
+      </div>
+      <div class="result-info">
+        <h5 class="result-name">${b.nama_barang}</h5>
+        <code class="result-kode">${b.kode_barang}</code>
+        <div class="result-badges mt-2">
+          <span class="badge-kondisi ${kondisiClass}">${b.kondisi}</span>
+          <span class="badge badge-kategori">${b.kategori}</span>
+        </div>
+        <div class="result-details mt-3">
+          ${b.merk ? `<div class="result-detail-item"><i class="bi bi-building"></i><span>${b.merk}</span></div>` : ''}
+          <div class="result-detail-item">
+            <i class="bi bi-123"></i>
+            <span>${b.jumlah} unit</span>
+          </div>
+          ${b.tanggal_pengadaan ? `<div class="result-detail-item"><i class="bi bi-calendar"></i><span>${b.tanggal_pengadaan}</span></div>` : ''}
+          ${b.spesifikasi ? `<div class="result-detail-item full"><i class="bi bi-cpu"></i><span>${b.spesifikasi}</span></div>` : ''}
+        </div>
+        <a href="/barang/detail/${b.kode_barang}" target="_blank" class="btn-primary-custom mt-3" style="display:inline-flex;">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Lihat Halaman Detail
+        </a>
+      </div>
+    </div>
+  `;
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('notFoundCard').style.display = 'none';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showNotFound(kode) {
+  document.getElementById('notFoundMessage').textContent = `Kode "${kode}" tidak ditemukan dalam database.`;
+  document.getElementById('notFoundCard').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+}
+
+function resetResult() {
+  lastScanned = '';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('notFoundCard').style.display = 'none';
+  document.getElementById('manualKode').value = '';
+}
+
+// Enter key on manual input
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('manualKode').addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchManual();
+  });
+});
+</script>
+{% endblock %}

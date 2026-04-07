@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cetak Label QR — Lab TJKT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Global ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #f0f4ff;
+      color: #1e293b;
+    }
+
+    /* ── Screen toolbar (tidak ikut print) ── */
+    .screen-toolbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: #1e293b;
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+    .toolbar-title {
+      font-weight: 700; color: #fff; font-size: 1rem; flex: 1;
+    }
+    .toolbar-info {
+      font-size: .82rem; color: #94a3b8;
+    }
+    .btn-print-now {
+      background: linear-gradient(135deg, #4361ee, #7209b7);
+      color: #fff; border: none; padding: 9px 20px;
+      border-radius: 8px; font-weight: 700; font-size: .875rem;
+      cursor: pointer; display: flex; align-items: center; gap: 7px;
+      transition: .2s; box-shadow: 0 4px 12px rgba(67,97,238,.35);
+    }
+    .btn-print-now:hover { transform: translateY(-1px); }
+    .btn-back {
+      background: rgba(255,255,255,.1); color: #e2e8f0;
+      border: 1.5px solid rgba(255,255,255,.15);
+      padding: 8px 16px; border-radius: 8px;
+      font-size: .85rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex;
+      align-items: center; gap: 6px; transition: .15s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+    /* ── Page wrapper (A4 landscape simulation) ── */
+    .page-wrapper {
+      padding: 80px 24px 32px; /* top = toolbar height */
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    /* ── Label grid — 4 kolom per baris ── */
+    .label-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* ── Single label card ── */
+    .label-card {
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      page-break-inside: avoid;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+    /* Header label: logo + nama sekolah */
+    .label-header {
+      display: flex; align-items: center; gap: 6px;
+      width: 100%;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 6px; margin-bottom: 4px;
+    }
+    .label-logo {
+      width: 28px; height: 28px;
+      object-fit: contain; flex-shrink: 0;
+    }
+    .label-school {
+      font-size: .6rem; font-weight: 700;
+      color: #1e3a8a; line-height: 1.3;
+    }
+    .label-jurusan {
+      font-size: .55rem; color: #475569; font-weight: 500;
+    }
+
+    /* QR image */
+    .label-qr {
+      width: 110px; height: 110px;
+      object-fit: contain;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 3px;
+    }
+
+    /* Info teks barang */
+    .label-kode {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem; font-weight: 600;
+      color: #4361ee;
+      background: #eef1fd; padding: 2px 7px;
+      border-radius: 4px; text-align: center;
+      width: 100%;
+    }
+    .label-nama {
+      font-size: .72rem; font-weight: 700;
+      color: #1e293b; text-align: center;
+      line-height: 1.3;
+    }
+    .label-meta {
+      font-size: .62rem; color: #64748b;
+      text-align: center; line-height: 1.4;
+    }
+
+    /* Kondisi badge */
+    .label-kondisi {
+      font-size: .6rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .kondisi-baik    { background: #d1fae5; color: #065f46; }
+    .kondisi-ringan  { background: #fef3c7; color: #92400e; }
+    .kondisi-berat   { background: #fee2e2; color: #991b1b; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 5rem 2rem;
+      color: #94a3b8;
+    }
+    .empty-state i { font-size: 4rem; margin-bottom: 1rem; display: block; }
+
+    /* ── PRINT STYLES ── */
+    @media print {
+      @page {
+        size: A4;
+        margin: 1cm;
+      }
+
+      .screen-toolbar { display: none !important; }
+      body { background: #fff; }
+      .page-wrapper { padding: 0; max-width: 100%; }
+
+      .label-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .label-card {
+        border: 1.5px solid #cbd5e1;
+        box-shadow: none;
+        border-radius: 6px;
+        padding: 8px;
+        break-inside: avoid;
+      }
+
+      .label-qr {
+        width: 90px;
+        height: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Screen Toolbar ── -->
+<div class="screen-toolbar">
+  <a href="javascript:history.back()" class="btn-back">
+    ← Kembali
+  </a>
+  <div class="toolbar-title">
+    🖨️ Cetak Label QR Code — Lab TJKT
+  </div>
+  <div class="toolbar-info">
+    {{ barang_list|length }} label siap cetak
+  </div>
+  <button class="btn-print-now" onclick="window.print()">
+    🖨️ Cetak Sekarang
+  </button>
+</div>
+
+<!-- ── Label Grid ── -->
+<div class="page-wrapper">
+  {% if barang_list %}
+  <div class="label-grid">
+    {% for b in barang_list %}
+    <div class="label-card">
+
+      <!-- Header: Logo + Sekolah -->
+      <div class="label-header">
+        <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+             alt="Logo" class="label-logo"/>
+        <div>
+          <div class="label-school">SMKN 1 Cikarang Selatan</div>
+          <div class="label-jurusan">Lab. TJKT — Bekasi</div>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      {% if b.qr_path %}
+      <img src="{{ url_for('static', filename=b.qr_path) }}"
+           alt="QR {{ b.kode_barang }}" class="label-qr"/>
+      {% else %}
+      <div class="label-qr d-flex align-items-center justify-content-center"
+           style="background:#f8faff;color:#94a3b8;font-size:2rem;">
+        ?
+      </div>
+      {% endif %}
+
+      <!-- Kode Barang -->
+      <div class="label-kode">{{ b.kode_barang }}</div>
+
+      <!-- Nama -->
+      <div class="label-nama">{{ b.nama_barang }}</div>
+
+      <!-- Meta info -->
+      <div class="label-meta">
+        {{ b.kategori }}{% if b.tipe_barang %} · {{ b.tipe_barang }}{% endif %}
+        {% if b.merk %}<br/>{{ b.merk }}{% endif %}
+      </div>
+
+      <!-- Kondisi -->
+      <span class="label-kondisi
+        {% if b.kondisi == 'Baik' %}kondisi-baik
+        {% elif b.kondisi == 'Rusak Ringan' %}kondisi-ringan
+        {% else %}kondisi-berat{% endif %}">
+        {{ b.kondisi }}
+      </span>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <i>📭</i>
+    <h5>Tidak ada barang yang dipilih</h5>
+    <p>Pilih barang dari tabel inventaris lalu klik "Cetak QR".</p>
+  </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

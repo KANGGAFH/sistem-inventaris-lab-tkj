@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Scan{% endblock %}
+{% block page_title %}Riwayat Scan QR{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+  <div class="panel-header">
+    <h6 class="panel-title"><i class="bi bi-clock-history me-2"></i>Riwayat Scan QR Code</h6>
+    <span class="text-muted small">{{ riwayat | length }} data terakhir</span>
+  </div>
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-custom mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Waktu Scan</th>
+            <th>Kode Barang</th>
+            <th>Nama Barang</th>
+            <th>IP Scanner</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in riwayat %}
+          <tr>
+            <td class="text-muted">{{ loop.index }}</td>
+            <td>
+              <div class="fw-600">{{ r.scanned_at.strftime('%d %b %Y') if r.scanned_at else '—' }}</div>
+              <small class="text-muted">{{ r.scanned_at.strftime('%H:%M:%S') if r.scanned_at else '' }}</small>
+            </td>
+            <td><code class="kode-text">{{ r.kode_barang }}</code></td>
+            <td>{{ r.nama_barang or '—' }}</td>
+            <td>
+              <span class="badge badge-ip">
+                <i class="bi bi-phone me-1"></i>{{ r.ip_scanner or 'Unknown' }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('barang_detail', kode=r.kode_barang) }}"
+                 class="btn-action btn-detail" target="_blank" title="Lihat detail">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <i class="bi bi-qr-code display-6 d-block mb-2"></i>
+              Belum ada riwayat scan
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Lab Inventory{% endblock %} — SIM Lab Komputer</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <!-- Custom CSS -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════ -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+           alt="Logo SMKN 1 Jakarta Utara"
+           class="brand-logo-img"/>
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">SIM Lab</span>
+      <span class="brand-sub">Inventaris Komputer</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">MENU UTAMA</div>
+
+    <a href="{{ url_for('dashboard') }}"
+       class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-grid-1x2-fill"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <a href="{{ url_for('barang_list') }}"
+       class="nav-item {% if request.endpoint in ['barang_list','barang_tambah','barang_edit'] %}active{% endif %}">
+      <i class="bi bi-pc-display"></i>
+      <span>Data Inventaris</span>
+    </a>
+
+    <a href="{{ url_for('scanner') }}"
+       class="nav-item {% if request.endpoint == 'scanner' %}active{% endif %}">
+      <i class="bi bi-qr-code-scan"></i>
+      <span>Scan QR Code</span>
+    </a>
+
+    <a href="{{ url_for('riwayat_scan') }}"
+       class="nav-item {% if request.endpoint == 'riwayat_scan' %}active{% endif %}">
+      <i class="bi bi-clock-history"></i>
+      <span>Riwayat Scan</span>
+    </a>
+
+    <div class="nav-section-label mt-3">AKUN</div>
+
+    <a href="{{ url_for('logout') }}" class="nav-item nav-item-danger">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Logout</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar">{{ session.nama_lengkap[0] | upper }}</div>
+      <div>
+        <div class="user-name">{{ session.nama_lengkap }}</div>
+        <div class="user-role">{{ session.role | capitalize }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════ -->
+<div class="main-wrapper" id="mainWrapper">
+
+  <!-- Top Navbar -->
+  <header class="top-navbar">
+    <button class="btn-sidebar-toggle" id="sidebarToggle">
+      <i class="bi bi-list"></i>
+    </button>
+    <div class="navbar-breadcrumb">
+      <span class="breadcrumb-current">{% block page_title %}Halaman{% endblock %}</span>
+    </div>
+    <div class="navbar-right">
+      <span class="badge-date">
+        <i class="bi bi-calendar3"></i>
+        <span id="currentDate"></span>
+      </span>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container mb-3">
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }} alert-dismissible fade show custom-alert" role="alert">
+              {% if cat == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+              {% elif cat == 'danger' %}<i class="bi bi-x-circle-fill me-2"></i>
+              {% elif cat == 'warning' %}<i class="bi bi-exclamation-triangle-fill me-2"></i>
+              {% else %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+              {{ msg }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="page-footer">
+    <span>© 2024 SIM Lab Komputer — Kerja Praktek</span>
+    <span class="ms-auto text-muted" style="font-size:.75rem;">v1.0.0</span>
+  </footer>
+</div>
+
+<!-- Overlay for mobile sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

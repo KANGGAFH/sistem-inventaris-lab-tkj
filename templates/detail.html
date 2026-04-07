@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detail — {{ barang.kode_barang }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body class="detail-body">
+
+<div class="detail-wrapper">
+  <!-- Header -->
+  <div class="detail-header">
+    <div class="detail-header-icon">
+      <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+           alt="Logo SMKN 1 Jakarta Utara"
+           class="detail-header-logo"/>
+    </div>
+    <div>
+      <h5 class="detail-header-title">{{ barang.nama_barang }}</h5>
+      <code class="detail-kode">{{ barang.kode_barang }}</code>
+    </div>
+    {% if barang.kondisi == 'Baik' %}
+      <span class="badge-kondisi kondisi-baik ms-auto">{{ barang.kondisi }}</span>
+    {% elif barang.kondisi == 'Rusak Ringan' %}
+      <span class="badge-kondisi kondisi-ringan ms-auto">{{ barang.kondisi }}</span>
+    {% else %}
+      <span class="badge-kondisi kondisi-berat ms-auto">{{ barang.kondisi }}</span>
+    {% endif %}
+  </div>
+
+  <div class="detail-body-wrap">
+    <!-- QR Code -->
+    <div class="detail-qr-section text-center mb-4">
+      {% if barang.qr_path %}
+        <img src="{{ url_for('static', filename=barang.qr_path) }}"
+             alt="QR Code" class="detail-qr-img"/>
+        <div class="text-muted small mt-1">QR Code Barang</div>
+      {% endif %}
+    </div>
+
+    <!-- Detail Info -->
+    <div class="detail-info-grid">
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-tag-fill me-1"></i>Kode Barang</div>
+        <div class="detail-info-value"><code>{{ barang.kode_barang }}</code></div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-grid me-1"></i>Kategori</div>
+        <div class="detail-info-value">{{ barang.kategori }}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-building me-1"></i>Merk</div>
+        <div class="detail-info-value">{{ barang.merk or '—' }}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-123 me-1"></i>Jumlah</div>
+        <div class="detail-info-value">{{ barang.jumlah }} unit</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-calendar-check me-1"></i>Tanggal Pengadaan</div>
+        <div class="detail-info-value">
+          {% if barang.tanggal_pengadaan %}
+            {{ barang.tanggal_pengadaan.strftime('%d %B %Y') }}
+          {% else %}—{% endif %}
+        </div>
+      </div>
+      {% if barang.spesifikasi %}
+      <div class="detail-info-item full-width">
+        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Spesifikasi</div>
+        <div class="detail-info-value">{{ barang.spesifikasi }}</div>
+      </div>
+      {% endif %}
+      {% if barang.keterangan %}
+      <div class="detail-info-item full-width">
+        <div class="detail-info-label"><i class="bi bi-chat-left-text me-1"></i>Keterangan</div>
+        <div class="detail-info-value">{{ barang.keterangan }}</div>
+      </div>
+      {% endif %}
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-clock me-1"></i>Tanggal Input</div>
+        <div class="detail-info-value">{{ barang.created_at.strftime('%d %B %Y, %H:%M') if barang.created_at else '—' }}</div>
+      </div>
+    </div>
+
+    <!-- Riwayat Scan -->
+    {% if riwayat %}
+    <div class="detail-scan-history mt-4">
+      <div class="detail-section-title">
+        <i class="bi bi-clock-history me-2"></i>Riwayat Scan Terakhir
+      </div>
+      {% for r in riwayat %}
+      <div class="scan-history-item">
+        <i class="bi bi-qr-code-scan text-primary me-2"></i>
+        <span class="scan-ip">{{ r.ip_scanner or 'Unknown' }}</span>
+        <span class="ms-auto text-muted small">{{ r.scanned_at.strftime('%d/%m/%Y %H:%M') if r.scanned_at else '' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+      <div class="text-muted small">
+        <i class="bi bi-info-circle me-1"></i>
+        Halaman ini diakses via scan QR Code
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
