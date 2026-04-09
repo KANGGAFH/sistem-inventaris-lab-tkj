@@ -84,7 +84,7 @@ qr_data = f"http://192.168.1.5:5000/barang/detail/{kode_barang}"
 
 ---
 
-## 🔐 Akun Default
+## 🔐 Akun
 
 | Username | Password |
 |----------|----------|
