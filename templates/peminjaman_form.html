@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Catat Peminjaman{% endblock %}
+{% block page_title %}Catat Peminjaman Barang{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2"></i>Form Peminjaman Barang</h6>
+        <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">
+          <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+      </div>
+      <div class="panel-body">
+        <form method="POST" id="formPinjam">
+
+          <!-- Pilih Barang -->
+          <div class="mb-3">
+            <label class="form-label-custom required">Pilih Barang</label>
+            <select name="barang_id" id="selectBarang" class="form-select form-control-custom"
+                    required onchange="updateInfoBarang()">
+              <option value="">— Pilih barang yang akan dipinjam —</option>
+              {% for b in barang_tersedia %}
+              <option value="{{ b.id }}"
+                      data-nama="{{ b.nama_barang }}"
+                      data-kode="{{ b.kode_barang }}"
+                      data-tipe="{{ b.tipe or b.kategori }}"
+                      data-jumlah="{{ b.jumlah }}">
+                [{{ b.kode_barang }}] {{ b.nama_barang }} — {{ b.tipe or b.kategori }} 
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Info barang -->
+          <div class="info-box mb-4" id="infoBarang" style="display:none;">
+            <i class="bi bi-box-seam me-2"></i>
+            <span id="infoText"></span>
+          </div>
+
+          <!-- Jumlah -->
+          <div class="mb-4">
+            <label class="form-label-custom required">Jumlah Dipinjam</label>
+            <input type="number" name="jumlah_pinjam" id="jumlahPinjam"
+                   class="form-control form-control-custom" style="max-width:160px;"
+                   min="1" value="1" required/>
+          </div>
+
+          <!-- Waktu Pinjam -->
+          <div class="section-divider mb-3">
+            <i class="bi bi-clock me-1"></i>Waktu Peminjaman
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label-custom required">Tanggal Pinjam</label>
+              <input type="date" name="tgl_pinjam" id="tglPinjam"
+                     class="form-control form-control-custom" required
+                     onchange="updatePreview()"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-custom required">Jam Pinjam (24 Jam)</label>
+              <div class="jam-selector">
+                <select id="jamPinjamHH" class="form-select jam-select" onchange="syncJam('pinjam'); updatePreview();">
+                  {% for h in range(0,24) %}
+                  <option value="{{ '%02d'|format(h) }}">{{ '%02d'|format(h) }}</option>
+                  {% endfor %}
+                </select>
+                <span class="jam-sep">:</span>
+                <select id="jamPinjamMM" class="form-select jam-select" onchange="syncJam('pinjam'); updatePreview();">
+                  {% for m in [0,5,10,15,20,25,30,35,40,45,50,55] %}
+                  <option value="{{ '%02d'|format(m) }}">{{ '%02d'|format(m) }}</option>
+                  {% endfor %}
+                </select>
+                <span class="jam-wib">WIB</span>
+              </div>
+              <input type="hidden" name="jam_pinjam" id="jamPinjam"/>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label-custom">&nbsp;</label>
+              <div class="waktu-preview" id="previewPinjam">
+                <i class="bi bi-calendar-event me-2"></i>
+                <span id="previewPinjamText">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rencana Kembali -->
+          <div class="section-divider mb-3">
+            <i class="bi bi-calendar-check me-1"></i>Rencana Pengembalian
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label-custom required">Tanggal Kembali</label>
+              <input type="date" name="tgl_kembali_rencana" id="tglKembali"
+                     class="form-control form-control-custom" required
+                     onchange="updatePreview()"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-custom required">Jam Kembali (24 Jam)</label>
+              <div class="jam-selector">
+                <select id="jamKembaliHH" class="form-select jam-select" onchange="syncJam('kembali'); updatePreview();">
+                  {% for h in range(0,24) %}
+                  <option value="{{ '%02d'|format(h) }}">{{ '%02d'|format(h) }}</option>
+                  {% endfor %}
+                </select>
+                <span class="jam-sep">:</span>
+                <select id="jamKembaliMM" class="form-select jam-select" onchange="syncJam('kembali'); updatePreview();">
+                  {% for m in [0,5,10,15,20,25,30,35,40,45,50,55] %}
+                  <option value="{{ '%02d'|format(m) }}">{{ '%02d'|format(m) }}</option>
+                  {% endfor %}
+                </select>
+                <span class="jam-wib">WIB</span>
+              </div>
+              <input type="hidden" name="jam_kembali_rencana" id="jamKembali"/>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label-custom">&nbsp;</label>
+              <div class="waktu-preview" id="previewKembali">
+                <i class="bi bi-calendar-check me-2"></i>
+                <span id="previewKembaliText">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Durasi otomatis -->
+          <div class="durasi-box mb-4" id="durasiBox" style="display:none;">
+            <i class="bi bi-stopwatch me-2"></i>
+            Durasi peminjaman: <strong id="durasiText"></strong>
+          </div>
+
+          <!-- Data Peminjam -->
+          <div class="section-divider mb-3">
+            <i class="bi bi-person me-1"></i>Data Peminjam
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-5">
+              <label class="form-label-custom required">Nama Peminjam</label>
+              <input type="text" name="nama_peminjam" class="form-control form-control-custom"
+                     placeholder="Nama lengkap" required/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-custom">Kelas / Jabatan</label>
+              <input type="text" name="kelas_jabatan" class="form-control form-control-custom"
+                     placeholder="XII TKJ 1"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-custom">No. HP</label>
+              <input type="text" name="no_hp" class="form-control form-control-custom"
+                     placeholder="08xx-xxxx-xxxx"/>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">Keperluan / Keterangan</label>
+            <textarea name="keperluan" class="form-control form-control-custom" rows="2"
+                      placeholder="Tujuan peminjaman barang..."></textarea>
+          </div>
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn-primary-custom">
+              <i class="bi bi-check-lg me-1"></i>Simpan Peminjaman
+            </button>
+            <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
+               'Juli','Agustus','September','Oktober','November','Desember'];
+const pad   = n => String(n).padStart(2,'0');
+
+// ── Set default tanggal & jam sekarang ───────────────────
+const now     = new Date();
+const tglNow  = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+const hNow    = pad(now.getHours());
+const mNow    = pad(Math.floor(now.getMinutes()/5)*5); // bulatkan ke 5 menit terdekat
+
+document.getElementById('tglPinjam').value = tglNow;
+document.getElementById('jamPinjamHH').value = hNow;
+document.getElementById('jamPinjamMM').value = mNow;
+
+// Default kembali: besok, jam sama
+const besok   = new Date(now.getTime() + 24*60*60*1000);
+const tglBesok = `${besok.getFullYear()}-${pad(besok.getMonth()+1)}-${pad(besok.getDate())}`;
+document.getElementById('tglKembali').value   = tglBesok;
+document.getElementById('jamKembaliHH').value = hNow;
+document.getElementById('jamKembaliMM').value = mNow;
+
+// ── Sync select → hidden input ───────────────────────────
+function syncJam(which) {
+  if (which === 'pinjam') {
+    const hh = document.getElementById('jamPinjamHH').value;
+    const mm = document.getElementById('jamPinjamMM').value;
+    document.getElementById('jamPinjam').value = `${hh}:${mm}`;
+  } else {
+    const hh = document.getElementById('jamKembaliHH').value;
+    const mm = document.getElementById('jamKembaliMM').value;
+    document.getElementById('jamKembali').value = `${hh}:${mm}`;
+  }
+}
+// Inisialisasi hidden inputs
+syncJam('pinjam');
+syncJam('kembali');
+
+// ── Format preview ───────────────────────────────────────
+function getJamStr(which) {
+  if (which === 'pinjam') {
+    return `${document.getElementById('jamPinjamHH').value}:${document.getElementById('jamPinjamMM').value}`;
+  }
+  return `${document.getElementById('jamKembaliHH').value}:${document.getElementById('jamKembaliMM').value}`;
+}
+
+function formatDT(tgl, jamStr) {
+  if (!tgl || !jamStr) return '—';
+  const d = new Date(`${tgl}T${jamStr}:00`);
+  return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()} · ${jamStr} WIB`;
+}
+
+function hitungDurasi(tgl1, jam1, tgl2, jam2) {
+  const a = new Date(`${tgl1}T${jam1}:00`);
+  const b = new Date(`${tgl2}T${jam2}:00`);
+  const diff = b - a;
+  if (diff <= 0) return null;
+  const totalJam = Math.floor(diff / (1000*60*60));
+  const hari     = Math.floor(totalJam / 24);
+  const sisaJam  = totalJam % 24;
+  const menit    = Math.floor((diff % (1000*60*60)) / (1000*60));
+  let hasil = '';
+  if (hari > 0)    hasil += `${hari} hari `;
+  if (sisaJam > 0) hasil += `${sisaJam} jam `;
+  if (menit > 0 && hari === 0) hasil += `${menit} menit`;
+  return hasil.trim() || null;
+}
+
+function updatePreview() {
+  // Sync dulu
+  syncJam('pinjam');
+  syncJam('kembali');
+
+  const tP = document.getElementById('tglPinjam').value;
+  const jP = getJamStr('pinjam');
+  const tK = document.getElementById('tglKembali').value;
+  const jK = getJamStr('kembali');
+
+  document.getElementById('previewPinjamText').textContent  = formatDT(tP, jP);
+  document.getElementById('previewKembaliText').textContent = formatDT(tK, jK);
+
+  const durasi = hitungDurasi(tP, jP, tK, jK);
+  const dBox   = document.getElementById('durasiBox');
+  if (durasi) {
+    document.getElementById('durasiText').textContent = durasi;
+    dBox.style.display = 'flex';
+  } else {
+    dBox.style.display = 'none';
+  }
+}
+updatePreview();
+
+// ── Info Barang ──────────────────────────────────────────
+function updateInfoBarang() {
+  const sel = document.getElementById('selectBarang');
+  const opt = sel.options[sel.selectedIndex];
+  const box = document.getElementById('infoBarang');
+  const txt = document.getElementById('infoText');
+  const inp = document.getElementById('jumlahPinjam');
+  if (!sel.value) { box.style.display='none'; return; }
+  box.style.display = 'flex';
+  txt.textContent = `${opt.dataset.nama} [${opt.dataset.kode}] · ${opt.dataset.tipe}`;
+  inp.max = parseInt(opt.dataset.jumlah);
+}
+
+// ── Validasi submit ──────────────────────────────────────
+document.getElementById('formPinjam').addEventListener('submit', function(e) {
+  syncJam('pinjam');
+  syncJam('kembali');
+  const tP = document.getElementById('tglPinjam').value;
+  const jP = getJamStr('pinjam');
+  const tK = document.getElementById('tglKembali').value;
+  const jK = getJamStr('kembali');
+  if (new Date(`${tK}T${jK}:00`) <= new Date(`${tP}T${jP}:00`)) {
+    e.preventDefault();
+    alert('Waktu rencana kembali harus setelah waktu pinjam!');
+  }
+});
+</script>
+{% endblock %}

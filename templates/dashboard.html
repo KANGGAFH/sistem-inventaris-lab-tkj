@@ -1,150 +1,133 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-
-{% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>{% endblock %}
 
 {% block content %}
-<!-- ── STAT CARDS ─────────────────────────────────────── -->
-<div class="row g-4 mb-4">
-
-  <div class="col-6 col-xl-3">
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-2">
     <div class="stat-card stat-total">
       <div class="stat-icon"><i class="bi bi-archive-fill"></i></div>
-      <div class="stat-body">
-        <div class="stat-value">{{ stats.total }}</div>
-        <div class="stat-label">Total Inventaris</div>
-      </div>
+      <div class="stat-body"><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total Inventaris</div></div>
       <div class="stat-bg-icon"><i class="bi bi-archive-fill"></i></div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
+  <div class="col-6 col-xl-2">
     <div class="stat-card stat-baik">
       <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
-      <div class="stat-body">
-        <div class="stat-value">{{ stats.baik }}</div>
-        <div class="stat-label">Kondisi Baik</div>
-      </div>
+      <div class="stat-body"><div class="stat-value">{{ stats.baik }}</div><div class="stat-label">Kondisi Baik</div></div>
       <div class="stat-bg-icon"><i class="bi bi-check-circle-fill"></i></div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
+  <div class="col-6 col-xl-2">
     <div class="stat-card stat-rusak-ringan">
       <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-      <div class="stat-body">
-        <div class="stat-value">{{ stats.rusak_ringan }}</div>
-        <div class="stat-label">Rusak Ringan</div>
-      </div>
+      <div class="stat-body"><div class="stat-value">{{ stats.rusak_ringan }}</div><div class="stat-label">Rusak Ringan</div></div>
       <div class="stat-bg-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
     </div>
   </div>
-
-  <div class="col-6 col-xl-3">
+  <div class="col-6 col-xl-2">
     <div class="stat-card stat-rusak-berat">
       <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
-      <div class="stat-body">
-        <div class="stat-value">{{ stats.rusak_berat }}</div>
-        <div class="stat-label">Rusak Berat</div>
-      </div>
+      <div class="stat-body"><div class="stat-value">{{ stats.rusak_berat }}</div><div class="stat-label">Rusak Berat</div></div>
       <div class="stat-bg-icon"><i class="bi bi-x-octagon-fill"></i></div>
     </div>
   </div>
-
+  <div class="col-6 col-xl-2">
+    <div class="stat-card stat-total" style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">
+      <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.dipinjam }}</div><div class="stat-label">Dipinjam</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-left-right"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-2">
+    <div class="stat-card stat-rusak-berat" style="background:linear-gradient(135deg,#f59e0b,#b45309);">
+      <div class="stat-icon"><i class="bi bi-alarm-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.terlambat }}</div><div class="stat-label">Terlambat</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-alarm-fill"></i></div>
+    </div>
+  </div>
 </div>
 
-<!-- ── CHARTS ─────────────────────────────────────────── -->
+<!-- Charts -->
 <div class="row g-4 mb-4">
-  <div class="col-lg-7">
-    <div class="card-panel">
-      <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-bar-chart-fill me-2"></i>Inventaris per Kategori</h6>
+  <div class="col-lg-5">
+    <div class="card-panel h-100">
+      <div class="panel-header"><h6 class="panel-title"><i class="bi bi-pie-chart-fill me-2"></i>Distribusi Kondisi</h6></div>
+      <div class="panel-body" style="height:240px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="chartKondisi" style="max-height:210px;"></canvas>
       </div>
-      <div class="panel-body" style="height:260px;">
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-header"><h6 class="panel-title"><i class="bi bi-bar-chart-fill me-2"></i>Per Kategori</h6></div>
+      <div class="panel-body" style="height:240px;">
         <canvas id="chartKategori"></canvas>
       </div>
     </div>
   </div>
-  <div class="col-lg-5">
-    <div class="card-panel">
-      <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-pie-chart-fill me-2"></i>Distribusi Kondisi</h6>
-      </div>
-      <div class="panel-body" style="height:260px; display:flex; align-items:center; justify-content:center;">
-        <canvas id="chartKondisi" style="max-height:220px;"></canvas>
+  <div class="col-lg-3">
+    <div class="card-panel h-100">
+      <div class="panel-header"><h6 class="panel-title"><i class="bi bi-pie-chart me-2"></i>Jenis Aset</h6></div>
+      <div class="panel-body" style="height:240px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="chartAset" style="max-height:210px;"></canvas>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── TABLES ─────────────────────────────────────────── -->
+<!-- Tables -->
 <div class="row g-4">
-  <!-- Barang Terbaru -->
   <div class="col-lg-7">
     <div class="card-panel">
       <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-clock-fill me-2"></i>Barang Terbaru</h6>
+        <h6 class="panel-title"><i class="bi bi-clock-fill me-2"></i>Barang Terbaru Ditambahkan</h6>
         <a href="{{ url_for('barang_list') }}" class="btn-panel-link">Lihat Semua</a>
       </div>
       <div class="panel-body p-0">
         <div class="table-responsive">
           <table class="table table-custom mb-0">
-            <thead>
-              <tr>
-                <th>Kode</th>
-                <th>Nama Barang</th>
-                <th>Lokasi</th>
-                <th>Kondisi</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Kode</th><th>Nama Barang</th><th>Tipe</th><th>Kondisi</th></tr></thead>
             <tbody>
               {% for b in barang_terbaru %}
               <tr>
                 <td><code class="kode-text">{{ b.kode_barang }}</code></td>
-                <td>{{ b.nama_barang }}</td>
-                <td><span class="badge badge-lokasi">{{ b.lokasi }}</span></td>
+                <td class="fw-600">{{ b.nama_barang }}</td>
+                <td class="text-muted small">{{ b.tipe or b.kategori }}</td>
                 <td>
-                  {% if b.kondisi == 'Baik' %}
-                    <span class="badge-kondisi kondisi-baik">{{ b.kondisi }}</span>
-                  {% elif b.kondisi == 'Rusak Ringan' %}
-                    <span class="badge-kondisi kondisi-ringan">{{ b.kondisi }}</span>
-                  {% else %}
-                    <span class="badge-kondisi kondisi-berat">{{ b.kondisi }}</span>
-                  {% endif %}
+                  {% if b.kondisi=='Baik' %}<span class="badge-kondisi kondisi-baik">{{ b.kondisi }}</span>
+                  {% elif b.kondisi=='Rusak Ringan' %}<span class="badge-kondisi kondisi-ringan">{{ b.kondisi }}</span>
+                  {% else %}<span class="badge-kondisi kondisi-berat">{{ b.kondisi }}</span>{% endif %}
                 </td>
               </tr>
-              {% else %}
-              <tr><td colspan="4" class="text-center text-muted py-4">Belum ada data</td></tr>
-              {% endfor %}
+              {% else %}<tr><td colspan="4" class="text-center text-muted py-3">Belum ada data</td></tr>{% endfor %}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Scan Terbaru -->
   <div class="col-lg-5">
     <div class="card-panel">
       <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-qr-code me-2"></i>Scan Terbaru</h6>
-        <a href="{{ url_for('riwayat_scan') }}" class="btn-panel-link">Lihat Semua</a>
+        <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2"></i>Peminjaman Aktif</h6>
+        <a href="{{ url_for('peminjaman_list') }}" class="btn-panel-link">Lihat Semua</a>
       </div>
       <div class="panel-body p-0">
-        {% for s in scan_terbaru %}
+        {% for p in pinjam_aktif %}
         <div class="scan-log-item">
-          <div class="scan-log-icon"><i class="bi bi-qr-code-scan"></i></div>
-          <div class="scan-log-info">
-            <div class="scan-log-name">{{ s.nama_barang or s.kode_barang }}</div>
-            <div class="scan-log-meta">{{ s.ip_scanner }} · {{ s.scanned_at.strftime('%d/%m %H:%M') if s.scanned_at else '' }}</div>
+          <div class="scan-log-icon {% if p.status=='Terlambat' %}bg-danger-soft{% endif %}">
+            <i class="bi bi-arrow-left-right {% if p.status=='Terlambat' %}text-danger{% endif %}"></i>
           </div>
+          <div class="scan-log-info">
+            <div class="scan-log-name">{{ p.nama_barang }}</div>
+            <div class="scan-log-meta">{{ p.nama_peminjam }} · Kembali: {{ p.tgl_kembali_rencana.strftime('%d/%m/%Y') if p.tgl_kembali_rencana else '—' }}</div>
+          </div>
+          {% if p.status=='Terlambat' %}<span class="badge-status status-terlambat ms-auto">Terlambat</span>{% endif %}
         </div>
-        {% else %}
-        <div class="text-center text-muted py-4">Belum ada riwayat scan</div>
-        {% endfor %}
+        {% else %}<div class="text-center text-muted py-4">Tidak ada peminjaman aktif</div>{% endfor %}
       </div>
     </div>
   </div>
@@ -153,82 +136,51 @@
 
 {% block scripts %}
 <script>
-// ── Data dari Flask ──────────────────────────────────────
-const dataKategori = {{ chart_kategori | safe }};
-const dataKondisi  = {{ chart_kondisi  | safe }};
+const dataKondisi  = {{ chart_kondisi | safe }};
+const dataKategori = {{ chart_kat | safe }};
+const dataAset     = {{ chart_aset | safe }};
 
-// ── Chart Kategori (Bar) ─────────────────────────────────
-const ctxBar = document.getElementById('chartKategori').getContext('2d');
-new Chart(ctxBar, {
-  type: 'bar',
-  data: {
-    labels: dataKategori.map(d => d.kategori),
-    datasets: [{
-      label: 'Jumlah Item',
-      data: dataKategori.map(d => d.jumlah),
-      backgroundColor: ['#4361ee','#7209b7','#f72585','#4cc9f0','#06d6a0','#ffd166'],
-      borderRadius: 8,
-      borderSkipped: false,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-      y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', stepSize: 1 } }
-    }
+// Chart Kondisi
+const kondisiColorMap = {'Baik':'#06d6a0','Rusak Ringan':'#ffd166','Rusak Berat':'#ef233c'};
+const kondisiOrder = ['Baik','Rusak Ringan','Rusak Berat'];
+const kondisiMap = {}; dataKondisi.forEach(d => kondisiMap[d.kondisi]=d.n);
+new Chart(document.getElementById('chartKondisi'), {
+  type:'doughnut',
+  data:{ labels:kondisiOrder, datasets:[{
+    data: kondisiOrder.map(k=>kondisiMap[k]||0),
+    backgroundColor: kondisiOrder.map(k=>kondisiColorMap[k]),
+    borderWidth:0, hoverOffset:8
+  }]},
+  options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+    plugins:{ legend:{ position:'bottom', labels:{color:'#64748b',padding:14,boxWidth:12}},
+      tooltip:{ callbacks:{ label(ctx){ const t=ctx.dataset.data.reduce((a,b)=>a+b,0); return ` ${ctx.label}: ${ctx.parsed} (${t?Math.round(ctx.parsed/t*100):0}%)`;}}}}
   }
 });
 
-// ── Chart Kondisi (Doughnut) ─────────────────────────────
-// Warna dipetakan berdasarkan NAMA kondisi, bukan urutan array
-// agar tidak bergantung pada urutan query MySQL
-const kondisiColorMap = {
-  'Baik'         : '#06d6a0',  // hijau
-  'Rusak Ringan' : '#ffd166',  // kuning
-  'Rusak Berat'  : '#ef233c',  // merah
-};
+// Chart Kategori
+new Chart(document.getElementById('chartKategori'), {
+  type:'bar',
+  data:{ labels:dataKategori.map(d=>d.kategori), datasets:[{
+    label:'Jumlah', data:dataKategori.map(d=>d.n),
+    backgroundColor:['#4361ee','#7209b7','#f72585','#4cc9f0','#06d6a0','#ffd166','#ef233c','#0ea5e9'],
+    borderRadius:6, borderSkipped:false
+  }]},
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}},
+    scales:{ x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',stepSize:1}}}
+  }
+});
 
-// Paksa 3 kondisi selalu muncul meski salah satu jumlahnya 0
-const kondisiOrder = ['Baik', 'Rusak Ringan', 'Rusak Berat'];
-const kondisiMap   = {};
-dataKondisi.forEach(d => { kondisiMap[d.kondisi] = d.jumlah; });
-
-const kondisiLabels = kondisiOrder;
-const kondisiData   = kondisiOrder.map(k => kondisiMap[k] || 0);
-const kondisiColors = kondisiOrder.map(k => kondisiColorMap[k]);
-
-const ctxDough = document.getElementById('chartKondisi').getContext('2d');
-new Chart(ctxDough, {
-  type: 'doughnut',
-  data: {
-    labels: kondisiLabels,
-    datasets: [{
-      data: kondisiData,
-      backgroundColor: kondisiColors,
-      borderWidth: 0,
-      hoverOffset: 8,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    cutout: '68%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { color: '#64748b', padding: 16, boxWidth: 12 }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(ctx) {
-            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-            const pct   = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
-            return ` ${ctx.label}: ${ctx.parsed} unit (${pct}%)`;
-          }
-        }
-      }
-    }
+// Chart Jenis Aset
+const asetMap={}; dataAset.forEach(d=>asetMap[d.jenis_aset]=d.n);
+new Chart(document.getElementById('chartAset'), {
+  type:'doughnut',
+  data:{ labels:['Aset Tetap','Aset Bergerak'], datasets:[{
+    data:[asetMap['Aset Tetap']||0, asetMap['Aset Bergerak']||0],
+    backgroundColor:['#4361ee','#f72585'], borderWidth:0, hoverOffset:8
+  }]},
+  options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+    plugins:{ legend:{position:'bottom',labels:{color:'#64748b',padding:14,boxWidth:12}}}
   }
 });
 </script>

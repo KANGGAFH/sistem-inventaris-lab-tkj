@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Peminjaman{% endblock %}
+{% block page_title %}Peminjaman & Pengembalian{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.dipinjam }}</div><div class="stat-label">Sedang Dipinjam</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-left-right"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="stat-card stat-baik">
+      <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.kembali }}</div><div class="stat-label">Dikembalikan</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="stat-card stat-rusak-berat">
+      <div class="stat-icon"><i class="bi bi-alarm-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.terlambat }}</div><div class="stat-label">Terlambat</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-alarm-fill"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="card-panel">
+  <div class="panel-header">
+    <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2"></i>Daftar Peminjaman</h6>
+    <a href="{{ url_for('peminjaman_tambah') }}" class="btn-primary-custom">
+      <i class="bi bi-plus-lg me-1"></i>Catat Peminjaman
+    </a>
+  </div>
+
+  <!-- Filter -->
+  <div class="panel-toolbar">
+    <form method="GET" action="{{ url_for('peminjaman_list') }}" class="filter-form">
+      <div class="input-icon-wrap" style="min-width:220px;">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" name="search" class="form-control form-control-search"
+               placeholder="Cari nama, kode..." value="{{ search }}"/>
+      </div>
+      <select name="status" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Status</option>
+        <option value="Dipinjam"     {% if f_status=='Dipinjam' %}selected{% endif %}>Dipinjam</option>
+        <option value="Dikembalikan" {% if f_status=='Dikembalikan' %}selected{% endif %}>Dikembalikan</option>
+        <option value="Terlambat"    {% if f_status=='Terlambat' %}selected{% endif %}>Terlambat</option>
+      </select>
+      <button type="submit" class="btn-search">Cari</button>
+      {% if search or f_status %}<a href="{{ url_for('peminjaman_list') }}" class="btn-reset">Reset</a>{% endif %}
+    </form>
+    <div class="table-info ms-auto"><strong>{{ total_rows }}</strong> data</div>
+  </div>
+
+  <!-- Table -->
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-custom mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Kode Pinjam</th>
+            <th>Nama Peminjam</th>
+            <th>Barang</th>
+            <th>Jml</th>
+            <th>Tgl Pinjam</th>
+            <th>Rencana Kembali</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set offset=(page-1)*10 %}
+          {% for p in pinjam_list %}
+          <tr class="{% if p.status=='Terlambat' %}tr-terlambat{% endif %}">
+            <td class="text-muted">{{ offset+loop.index }}</td>
+            <td><code class="kode-text">{{ p.kode_pinjam }}</code></td>
+            <td>
+              <div class="fw-600">{{ p.nama_peminjam }}</div>
+              {% if p.kelas_jabatan %}<small class="text-muted">{{ p.kelas_jabatan }}</small>{% endif %}
+            </td>
+            <td>
+              <div class="fw-600">{{ p.nama_barang }}</div>
+              <small class="text-muted">{{ p.tipe or p.kategori }}</small>
+            </td>
+            <td class="text-center fw-600">{{ p.jumlah_pinjam }}</td>
+            <td>{{ p.tgl_pinjam.strftime('%d/%m/%Y') if p.tgl_pinjam else '—' }}</td>
+            <td>
+              {{ p.tgl_kembali_rencana.strftime('%d/%m/%Y') if p.tgl_kembali_rencana else '—' }}
+              {% if p.status=='Terlambat' %}
+                <div class="text-danger small fw-600"><i class="bi bi-alarm me-1"></i>Terlambat!</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if p.status=='Dipinjam' %}
+                <span class="badge-status status-dipinjam">Dipinjam</span>
+              {% elif p.status=='Dikembalikan' %}
+                <span class="badge-status status-kembali">Dikembalikan</span>
+              {% else %}
+                <span class="badge-status status-terlambat">Terlambat</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="action-buttons">
+                <a href="{{ url_for('peminjaman_detail', id=p.id) }}" class="btn-action btn-detail" title="Detail"><i class="bi bi-eye"></i></a>
+                {% if p.status != 'Dikembalikan' %}
+                <a href="{{ url_for('peminjaman_kembalikan', id=p.id) }}" class="btn-action btn-edit" title="Kembalikan"><i class="bi bi-arrow-return-left"></i></a>
+                {% endif %}
+                <button class="btn-action btn-delete" title="Hapus" onclick="confirmHapus({{ p.id }},'{{ p.kode_pinjam }}')"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="text-center text-muted py-5">
+            <i class="bi bi-inbox display-6 d-block mb-2"></i>Belum ada data peminjaman
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="panel-footer">
+    <nav><ul class="pagination-custom">
+      <li class="{% if page==1 %}disabled{% endif %}"><a href="?page={{ page-1 }}&search={{ search }}&status={{ f_status }}"><i class="bi bi-chevron-left"></i></a></li>
+      {% for p in range(1,total_pages+1) %}
+      <li class="{% if p==page %}active{% endif %}"><a href="?page={{ p }}&search={{ search }}&status={{ f_status }}">{{ p }}</a></li>
+      {% endfor %}
+      <li class="{% if page==total_pages %}disabled{% endif %}"><a href="?page={{ page+1 }}&search={{ search }}&status={{ f_status }}"><i class="bi bi-chevron-right"></i></a></li>
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="hapusModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+        <h6 class="fw-700 mt-3 mb-1">Hapus Data Peminjaman?</h6>
+        <p class="text-muted small mb-0" id="hapusKode"></p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center gap-2 pt-0">
+        <button class="btn-outline-custom" data-bs-dismiss="modal">Batal</button>
+        <form id="hapusForm" method="POST"><button type="submit" class="btn-danger-custom">Hapus</button></form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmHapus(id, kode) {
+  document.getElementById('hapusKode').textContent = kode;
+  document.getElementById('hapusForm').action = '/peminjaman/hapus/' + id;
+  new bootstrap.Modal(document.getElementById('hapusModal')).show();
+}
+</script>
+{% endblock %}

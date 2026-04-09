@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}{% if mode == 'tambah' %}Tambah{% else %}Edit{% endif %} Barang{% endblock %}
-{% block page_title %}{% if mode == 'tambah' %}Tambah Barang{% else %}Edit Barang{% endif %}{% endblock %}
+{% block title %}{% if mode=='tambah' %}Tambah{% else %}Edit{% endif %} Barang{% endblock %}
+{% block page_title %}{% if mode=='tambah' %}Tambah Barang{% else %}Edit Barang{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,126 +8,125 @@
     <div class="card-panel">
       <div class="panel-header">
         <h6 class="panel-title">
-          <i class="bi bi-{% if mode == 'tambah' %}plus-circle{% else %}pencil{% endif %}-fill me-2"></i>
-          {% if mode == 'tambah' %}Form Tambah Barang Baru{% else %}Form Edit Barang{% endif %}
+          <i class="bi bi-{% if mode=='tambah' %}plus-circle{% else %}pencil{% endif %}-fill me-2"></i>
+          {% if mode=='tambah' %}Form Tambah Barang Baru{% else %}Form Edit Barang{% endif %}
         </h6>
-        <a href="{{ url_for('barang_list') }}" class="btn-outline-custom">
-          <i class="bi bi-arrow-left me-1"></i> Kembali
-        </a>
+        <a href="{{ url_for('barang_list') }}" class="btn-outline-custom"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
       </div>
-
       <div class="panel-body">
         <form method="POST" id="barangForm">
 
-          <!-- ROW 1: Nama Barang -->
-          <div class="mb-3">
-            <label class="form-label-custom required">Nama Barang</label>
-            <input type="text" name="nama_barang" class="form-control form-control-custom"
-                   placeholder="Contoh: PC Desktop Core i5 Gen 10"
-                   value="{{ barang.nama_barang if barang else '' }}" required/>
-          </div>
-
-          <!-- ROW 2: Kategori & Tipe Barang -->
+          <!-- Nama & Kategori -->
           <div class="row g-3 mb-3">
-            <div class="col-md-6">
+            <div class="col-md-7">
+              <label class="form-label-custom required">Nama Barang</label>
+              <input type="text" name="nama_barang" class="form-control form-control-custom"
+                     placeholder="Contoh: PC Desktop Core i5"
+                     value="{{ barang.nama_barang if barang else '' }}" required/>
+            </div>
+            <div class="col-md-5">
               <label class="form-label-custom required">Kategori</label>
-              <select name="kategori" id="selectKategori"
-                      class="form-select form-control-custom" onchange="updateTipe()">
-                {% set cats = ['Komputer','Monitor','Jaringan','Peripheral','Printer','Scanner','Listrik','Lainnya'] %}
-                {% for c in cats %}
-                <option value="{{ c }}"
-                  {% if (barang and barang.kategori == c) or (not barang and c == 'Komputer') %}selected{% endif %}>
-                  {{ c }}
-                </option>
+              <select name="kategori" id="selectKategori" class="form-select form-control-custom" required>
+                {% for k in kategori_list %}
+                <option value="{{ k }}" {% if barang and barang.kategori==k %}selected{% elif not barang and k=='Komputer' %}selected{% endif %}>{{ k }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label-custom required">Tipe Barang</label>
-              <select name="tipe_barang" id="selectTipe" class="form-select form-control-custom">
-                <!-- Diisi dinamis oleh JavaScript -->
+          </div>
+
+          <!-- Tipe Produk & Jenis Aset -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-5">
+              <label class="form-label-custom required">Tipe Produk</label>
+              <select name="tipe" id="selectTipe" class="form-select form-control-custom" required>
+                {% if barang and barang.tipe %}
+                  <option value="{{ barang.tipe }}" selected>{{ barang.tipe }}</option>
+                {% endif %}
               </select>
-              <div class="form-hint mt-1">
+              <div class="form-text text-muted small mt-1">
                 <i class="bi bi-info-circle me-1"></i>
-                Kode barang digenerate otomatis dari Kategori + Tipe
+                Kode barang akan digenerate otomatis dari kategori + tipe
               </div>
             </div>
-          </div>
-
-          <!-- Preview Kode Barang -->
-          <div class="kode-preview mb-3" id="kodePreview">
-            <i class="bi bi-tag-fill me-2"></i>
-            Preview kode: <code id="kodeText">—</code>
-            <span class="text-muted small ms-2">(urutan ditentukan saat simpan)</span>
-          </div>
-
-          <!-- ROW 3: Merk & Jumlah -->
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label-custom">Merk / Produsen</label>
-              <input type="text" name="merk" class="form-control form-control-custom"
-                     placeholder="Contoh: Dell, HP, Logitech, TP-Link"
-                     value="{{ barang.merk if barang else '' }}"/>
+            <div class="col-md-4">
+              <label class="form-label-custom required">Jenis Aset</label>
+              <div class="jenis-selector mt-1">
+                {% for j in jenis_aset_list %}
+                <label class="jenis-option jenis-{{ j.lower().replace(' ','-') }}">
+                  <input type="radio" name="jenis_aset" value="{{ j }}"
+                         {% if (barang and barang.jenis_aset==j) or (not barang and j=='Aset Tetap') %}checked{% endif %}/>
+                  <i class="bi bi-{% if j=='Aset Tetap' %}building{% else %}arrows-move{% endif %} me-1"></i>
+                  <span>{{ j }}</span>
+                </label>
+                {% endfor %}
+              </div>
             </div>
             <div class="col-md-3">
-              <label class="form-label-custom required">Jumlah Unit</label>
+              <label class="form-label-custom">Jumlah Unit</label>
               <input type="number" name="jumlah" class="form-control form-control-custom"
                      min="1" value="{{ barang.jumlah if barang else 1 }}"/>
             </div>
-            <div class="col-md-3">
+          </div>
+
+          <!-- Preview Kode -->
+          <div class="mb-3">
+            <div class="kode-preview" id="kodePreview">
+              <i class="bi bi-tag-fill me-2 text-primary"></i>
+              Kode barang: <strong id="previewText">—</strong>
+              <span class="text-muted small ms-2">(digenerate otomatis)</span>
+            </div>
+          </div>
+
+          <!-- Kondisi & Tanggal -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label-custom required">Kondisi Barang</label>
+              <div class="kondisi-selector mt-1">
+                {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
+                <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
+                  <input type="radio" name="kondisi" value="{{ k }}"
+                         {% if (barang and barang.kondisi==k) or (not barang and k=='Baik') %}checked{% endif %}/>
+                  <span>{{ k }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="col-md-4">
               <label class="form-label-custom">Tanggal Pengadaan</label>
               <input type="date" name="tanggal_pengadaan" class="form-control form-control-custom"
                      value="{{ barang.tanggal_pengadaan if barang and barang.tanggal_pengadaan else '' }}"/>
             </div>
           </div>
 
-          <!-- ROW 4: Kondisi -->
-          <div class="mb-3">
-            <label class="form-label-custom required">Kondisi Barang</label>
-            <div class="kondisi-selector">
-              {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
-              <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
-                <input type="radio" name="kondisi" value="{{ k }}"
-                       {% if (barang and barang.kondisi == k) or (not barang and k == 'Baik') %}checked{% endif %}/>
-                <span>{% if k == 'Baik' %}<i class="bi bi-check-circle me-1"></i>
-                      {% elif k == 'Rusak Ringan' %}<i class="bi bi-exclamation-circle me-1"></i>
-                      {% else %}<i class="bi bi-x-circle me-1"></i>{% endif %}{{ k }}</span>
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-
-          <!-- ROW 5: Spesifikasi -->
+          <!-- Spesifikasi -->
           <div class="mb-3">
             <label class="form-label-custom">Spesifikasi Teknis</label>
-            <textarea name="spesifikasi" class="form-control form-control-custom"
-                      rows="3"
-                      placeholder="Contoh: Intel Core i5-10400, RAM 8GB DDR4, SSD 256GB, Windows 11">{{ barang.spesifikasi if barang else '' }}</textarea>
+            <textarea name="spesifikasi" class="form-control form-control-custom" rows="3"
+                      placeholder="Contoh: Intel Core i5-10400, RAM 8GB DDR4, SSD 256GB">{{ barang.spesifikasi if barang else '' }}</textarea>
           </div>
 
-          <!-- ROW 6: Keterangan -->
+          <!-- Keterangan -->
           <div class="mb-4">
             <label class="form-label-custom">Keterangan Tambahan</label>
-            <textarea name="keterangan" class="form-control form-control-custom"
-                      rows="2"
-                      placeholder="Catatan khusus tentang barang ini...">{{ barang.keterangan if barang else '' }}</textarea>
+            <textarea name="keterangan" class="form-control form-control-custom" rows="2"
+                      placeholder="Catatan khusus...">{{ barang.keterangan if barang else '' }}</textarea>
           </div>
 
-          {% if mode == 'tambah' %}
+          {% if mode=='tambah' %}
           <div class="info-box mb-4">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            Kode barang dan QR Code digenerate <strong>otomatis</strong> berdasarkan kategori dan tipe yang dipilih.
+            <i class="bi bi-magic me-2"></i>
+            Kode barang unik dan QR Code akan digenerate otomatis saat data disimpan,
+            berdasarkan kombinasi <strong>Kategori + Tipe Produk + Tahun + Nomor Urut</strong>.
           </div>
           {% endif %}
 
           <div class="d-flex gap-3">
             <button type="submit" class="btn-primary-custom">
-              <i class="bi bi-{% if mode == 'tambah' %}plus-lg{% else %}check-lg{% endif %} me-1"></i>
-              {% if mode == 'tambah' %}Simpan & Generate QR{% else %}Simpan Perubahan{% endif %}
+              <i class="bi bi-{% if mode=='tambah' %}plus-lg{% else %}check-lg{% endif %} me-1"></i>
+              {% if mode=='tambah' %}Simpan & Generate QR{% else %}Simpan Perubahan{% endif %}
             </button>
             <a href="{{ url_for('barang_list') }}" class="btn-outline-custom">Batal</a>
           </div>
-
         </form>
       </div>
     </div>
@@ -137,56 +136,39 @@
 
 {% block scripts %}
 <script>
-// ── Data mapping kategori → tipe dari Flask ─────────────────
-const kategoriTipeMap = {{ kategori_tipe_map | safe }};
-
-// ── Prefix map untuk preview kode ───────────────────────────
-const katPrefix  = {
+const TIPE_MAP = {{ tipe_per_kategori | safe }};
+const KAT_PREFIX = {
   'Komputer':'KOM','Monitor':'MON','Jaringan':'NET',
-  'Peripheral':'PER','Printer':'PRN','Scanner':'SCN',
-  'Listrik':'LST','Lainnya':'LAN'
-};
-const tipePrefix = {
-  'Desktop':'DES','Laptop':'LAP','LED':'LED',
-  'Switch':'SWT','Router':'ROU','Access Point':'APT',
-  'Keyboard':'KEY','Mouse':'MOU','Laser':'LSR',
-  'Inkjet':'INK','UPS':'UPS','Proyektor':'PRY',
-  'Server':'SRV','Kabel':'KBL','Lainnya':'LAN'
+  'Peripheral':'PRP','Printer':'PRN','Listrik':'PWR',
+  'Scanner':'SCN','Furnitur':'FRN','Lainnya':'LNY'
 };
 
-// ── Nilai edit mode (jika edit, pertahankan tipe lama) ───────
-const currentTipe = "{{ barang.tipe_barang if barang else '' }}";
+const selKat  = document.getElementById('selectKategori');
+const selTipe = document.getElementById('selectTipe');
+const prevTxt = document.getElementById('previewText');
+const tahun   = new Date().getFullYear();
 
-function updateTipe() {
-  const kat     = document.getElementById('selectKategori').value;
-  const tipeSel = document.getElementById('selectTipe');
-  const tipes   = kategoriTipeMap[kat] || ['Lainnya'];
-
-  tipeSel.innerHTML = '';
-  tipes.forEach(t => {
-    const opt      = document.createElement('option');
-    opt.value      = t;
-    opt.textContent = t;
-    // Pertahankan tipe lama jika mode edit
-    if (t === currentTipe) opt.selected = true;
-    tipeSel.appendChild(opt);
-  });
+function populateTipe(kat, currentTipe='') {
+  const tipes = TIPE_MAP[kat] || ['Lainnya'];
+  selTipe.innerHTML = tipes.map(t =>
+    `<option value="${t}" ${t===currentTipe?'selected':''}>${t}</option>`
+  ).join('');
   updatePreview();
 }
 
 function updatePreview() {
-  const kat  = document.getElementById('selectKategori').value;
-  const tipe = document.getElementById('selectTipe').value;
-  const tahun = new Date().getFullYear();
-  const kp   = katPrefix[kat]  || 'LAN';
-  const tp   = tipePrefix[tipe] || 'LAN';
-  document.getElementById('kodeText').textContent = `${kp}-${tp}-${tahun}-XXXX`;
+  const kat  = selKat.value;
+  const tipe = selTipe.value;
+  const katPfx  = KAT_PREFIX[kat] || 'LNY';
+  const tipePfx = tipe.replace(/[^A-Za-z]/g,'').substring(0,3).toUpperCase() || 'XXX';
+  prevTxt.textContent = `${katPfx}-${tipePfx}-${tahun}-XXXX`;
 }
 
+selKat.addEventListener('change', () => populateTipe(selKat.value));
+selTipe.addEventListener('change', updatePreview);
+
 // Init
-document.addEventListener('DOMContentLoaded', () => {
-  updateTipe();
-  document.getElementById('selectTipe').addEventListener('change', updatePreview);
-});
+const initTipe = "{{ barang.tipe if barang else '' }}";
+populateTipe(selKat.value, initTipe);
 </script>
 {% endblock %}

@@ -3,289 +3,151 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cetak Label QR — Lab TJKT</title>
+  <title>Cetak Label QR — SIM Lab TJKT</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f2f8; }
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #f0f4ff;
-      color: #1e293b;
-    }
-
-    /* ── Toolbar (hilang saat print) ── */
-    .toolbar {
-      position: fixed; top:0; left:0; right:0; z-index:100;
-      background: #0f172a;
-      padding: 12px 28px;
+    /* ── TOOLBAR (tidak ikut tercetak) ── */
+    .no-print {
+      background: #1e293b; color: #fff; padding: 12px 24px;
       display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 2px 16px rgba(0,0,0,.4);
     }
-    .toolbar-logo {
-      width: 34px; height: 34px; object-fit: contain;
-      background: #fff; border-radius: 6px; padding: 2px;
+    .no-print h6 { margin: 0; font-size: .9rem; font-weight: 700; }
+    .btn-print {
+      background: #4361ee; color: #fff; border: none;
+      padding: 8px 20px; border-radius: 8px; font-weight: 700;
+      cursor: pointer; font-size: .875rem; margin-left: auto;
     }
-    .toolbar-title { font-size: .95rem; font-weight: 800; color: #fff; flex:1; }
-    .toolbar-count { font-size: .8rem; color: #94a3b8; }
-
-    .btn-tb {
-      padding: 8px 18px; border-radius: 8px;
-      font-size: .85rem; font-weight: 700;
-      border: none; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; transition: .2s;
-    }
-    .btn-cetak {
-      background: linear-gradient(135deg,#4361ee,#7209b7);
-      color: #fff; box-shadow: 0 4px 14px rgba(67,97,238,.4);
-    }
-    .btn-cetak:hover { transform: translateY(-1px); }
-    .btn-kembali {
-      background: rgba(255,255,255,.1); color: #e2e8f0;
-      border: 1.5px solid rgba(255,255,255,.15);
-    }
-    .btn-kembali:hover { background: rgba(255,255,255,.2); }
-
-    /* ── Page area ── */
-    .page-area {
-      padding: 88px 28px 40px;
-      max-width: 1080px; margin: 0 auto;
+    .btn-back {
+      background: transparent; color: #94a3b8; border: 1px solid #334155;
+      padding: 7px 16px; border-radius: 8px; font-size: .875rem;
+      cursor: pointer; text-decoration: none;
     }
 
-    /* ── Judul halaman (screen only) ── */
-    .page-heading {
-      font-size: 1rem; font-weight: 700; color: #475569;
-      margin-bottom: 20px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .page-heading span {
-      background: #e0e7ff; color: #3730a3;
-      font-size: .75rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;
-    }
-
-    /* ── Label grid: 4 per baris ── */
-    .label-grid {
+    /* ── LABEL GRID ── */
+    .label-page {
+      max-width: 210mm; margin: 20px auto; padding: 10mm;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6mm;
     }
 
-    /* ── Satu kartu label ── */
     .label-card {
-      background: #fff;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 10px 10px 12px;
+      border: 1.5px solid #cbd5e1; border-radius: 8px;
+      padding: 10px; background: #fff;
       display: flex; flex-direction: column; align-items: center;
-      gap: 5px;
       page-break-inside: avoid;
-      break-inside: avoid;
     }
 
-    /* Header label */
-    .lbl-header {
-      width: 100%;
-      display: flex; align-items: center; gap: 6px;
-      padding-bottom: 7px;
-      border-bottom: 1.5px solid #e2e8f0;
-      margin-bottom: 4px;
+    .label-header {
+      width: 100%; display: flex; align-items: center; gap: 6px;
+      border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px;
     }
-    .lbl-logo {
-      width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;
-    }
-    .lbl-school-name {
-      font-size: .6rem; font-weight: 800; color: #1e3a8a; line-height: 1.3;
-    }
-    .lbl-school-sub {
-      font-size: .55rem; color: #64748b; font-weight: 500;
-    }
+    .label-logo { width: 24px; height: 24px; object-fit: contain; }
+    .label-school { font-size: 7px; font-weight: 700; color: #1e293b; line-height: 1.2; }
+    .label-school span { font-size: 6px; color: #64748b; display: block; }
 
-    /* QR image */
-    .lbl-qr {
-      width: 108px; height: 108px;
-      object-fit: contain;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 6px; padding: 3px;
-    }
-    .lbl-qr-missing {
-      width: 108px; height: 108px;
-      background: #f8faff; border: 1.5px dashed #cbd5e1;
-      border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      color: #94a3b8; font-size: 2rem;
-    }
+    .label-qr img { width: 100px; height: 100px; display: block; }
 
-    /* Kode barang */
-    .lbl-kode {
+    .label-info { width: 100%; margin-top: 8px; text-align: center; }
+    .label-kode {
       font-family: 'JetBrains Mono', monospace;
-      font-size: .62rem; font-weight: 700; color: #4361ee;
+      font-size: 8px; font-weight: 700; color: #4361ee;
       background: #eef1fd; padding: 3px 8px; border-radius: 4px;
-      text-align: center; width: 100%;
-      letter-spacing: .02em;
+      display: inline-block; margin-bottom: 4px;
+    }
+    .label-nama { font-size: 9px; font-weight: 700; color: #1e293b; margin-bottom: 3px; line-height: 1.3; }
+    .label-meta { font-size: 7px; color: #64748b; line-height: 1.5; }
+
+    .label-footer {
+      width: 100%; margin-top: 8px; padding-top: 6px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .label-kondisi {
+      font-size: 7px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+    }
+    .kondisi-baik    { background: #d1fae5; color: #065f46; }
+    .kondisi-ringan  { background: #fef3c7; color: #92400e; }
+    .kondisi-berat   { background: #fee2e2; color: #991b1b; }
+    .label-tgl { font-size: 6.5px; color: #94a3b8; }
+
+    .empty-label {
+      border: 1.5px dashed #e2e8f0; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #e2e8f0; font-size: .7rem; min-height: 160px;
     }
 
-    /* Nama barang */
-    .lbl-nama {
-      font-size: .72rem; font-weight: 800; color: #1e293b;
-      text-align: center; line-height: 1.4;
-    }
-
-    /* Tipe & kategori */
-    .lbl-meta {
-      font-size: .62rem; color: #64748b;
-      text-align: center; line-height: 1.5;
-    }
-
-    /* Jenis aset badge */
-    .lbl-aset {
-      font-size: .58rem; font-weight: 700;
-      padding: 2px 8px; border-radius: 10px;
-    }
-    .aset-tetap    { background: #dbeafe; color: #1e40af; }
-    .aset-bergerak { background: #fef9c3; color: #854d0e; }
-
-    /* Kondisi badge */
-    .lbl-kondisi {
-      font-size: .58rem; font-weight: 700;
-      padding: 2px 8px; border-radius: 10px;
-    }
-    .kondisi-baik   { background: #d1fae5; color: #065f46; }
-    .kondisi-ringan { background: #fef3c7; color: #92400e; }
-    .kondisi-berat  { background: #fee2e2; color: #991b1b; }
-
-    /* Footer tiap label */
-    .lbl-footer {
-      width: 100%;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 5px; margin-top: 2px;
-      font-size: .55rem; color: #94a3b8; text-align: center;
-    }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center; padding: 6rem 2rem; color: #94a3b8;
-    }
-    .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; }
-
-    /* ════════════════════════════════
-       PRINT STYLES
-    ════════════════════════════════ */
+    /* ── PRINT RULES ── */
     @media print {
-      @page { size: A4; margin: 1cm; }
-
-      .toolbar, .page-heading { display: none !important; }
-      body { background: #fff; }
-      .page-area { padding: 0; max-width: 100%; }
-
-      .label-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-      }
-      .label-card {
-        border: 1.5px solid #cbd5e1;
-        border-radius: 6px; padding: 7px;
-        break-inside: avoid;
-      }
-      .lbl-qr { width: 90px; height: 90px; }
-      .lbl-qr-missing { width: 90px; height: 90px; }
+      .no-print { display: none !important; }
+      body { background: white; }
+      .label-page { margin: 0; padding: 8mm; max-width: 100%; }
+      .label-card { break-inside: avoid; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Toolbar ─────────────────────────────────────────────── -->
-<div class="toolbar">
-  <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
-       alt="Logo" class="toolbar-logo"/>
-  <div class="toolbar-title">Cetak Label QR Code — Lab TJKT</div>
-  <div class="toolbar-count">{{ barang_list|length }} label</div>
-  <a href="{{ url_for('barang_list') }}" class="btn-tb btn-kembali">
-    ← Kembali
-  </a>
-  <button class="btn-tb btn-cetak" onclick="window.print()">
-    🖨️ Cetak Sekarang
-  </button>
+<!-- Toolbar -->
+<div class="no-print">
+  <h6><i class="bi bi-printer me-2"></i>Cetak Label QR Code</h6>
+  <span class="text-muted small">{{ barang_list|length }} label siap cetak</span>
+  <a href="javascript:history.back()" class="btn-back">← Kembali</a>
+  <button class="btn-print" onclick="window.print()">🖨️ Cetak Sekarang</button>
 </div>
 
-<!-- ── Label Area ───────────────────────────────────────────── -->
-<div class="page-area">
-  <div class="page-heading">
-    🏷️ Preview Label QR Code
-    <span>{{ barang_list|length }} barang</span>
-  </div>
-
-  {% if barang_list %}
-  <div class="label-grid">
-    {% for b in barang_list %}
-    <div class="label-card">
-
-      <!-- Header: logo + nama sekolah -->
-      <div class="lbl-header">
-        <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
-             alt="Logo" class="lbl-logo"/>
-        <div>
-          <div class="lbl-school-name">SMKN 1 Cikarang Selatan</div>
-          <div class="lbl-school-sub">Laboratorium TJKT · Bekasi</div>
-        </div>
+<!-- Label Grid -->
+<div class="label-page">
+  {% for b in barang_list %}
+  <div class="label-card">
+    <!-- Header sekolah -->
+    <div class="label-header">
+      <img src="/static/img/icon_sekolah.png" alt="Logo" class="label-logo"/>
+      <div class="label-school">
+        SMKN 1 Cikarang Selatan
+        <span>Lab TJKT — Inventaris</span>
       </div>
-
-      <!-- QR Code -->
-      {% if b.qr_path %}
-        <img src="{{ url_for('static', filename=b.qr_path) }}"
-             alt="QR {{ b.kode_barang }}" class="lbl-qr"/>
-      {% else %}
-        <div class="lbl-qr-missing">?</div>
-      {% endif %}
-
-      <!-- Kode Barang -->
-      <div class="lbl-kode">{{ b.kode_barang }}</div>
-
-      <!-- Nama Barang -->
-      <div class="lbl-nama">{{ b.nama_barang }}</div>
-
-      <!-- Tipe & kategori -->
-      <div class="lbl-meta">
-        {{ b.kategori }}
-        {% if b.tipe %} · {{ b.tipe }}{% endif %}
-      </div>
-
-      <!-- Badge jenis aset -->
-      <span class="lbl-aset {% if b.jenis_aset == 'Aset Tetap' %}aset-tetap{% else %}aset-bergerak{% endif %}">
-        {{ b.jenis_aset or 'Aset Tetap' }}
-      </span>
-
-      <!-- Badge kondisi -->
-      <span class="lbl-kondisi
-        {% if b.kondisi == 'Baik' %}kondisi-baik
-        {% elif b.kondisi == 'Rusak Ringan' %}kondisi-ringan
-        {% else %}kondisi-berat{% endif %}">
-        {{ b.kondisi }}
-      </span>
-
-      <!-- Footer label -->
-      <div class="lbl-footer">
-        Scan QR untuk info lengkap
-      </div>
-
     </div>
-    {% endfor %}
-  </div>
 
-  {% else %}
-  <div class="empty-state">
-    <div class="icon">📭</div>
-    <h5>Tidak ada barang yang dipilih</h5>
-    <p style="margin-top:.5rem;">
-      Centang barang dari halaman inventaris, lalu klik "Cetak Label QR".
-    </p>
-    <a href="{{ url_for('barang_list') }}"
-       style="display:inline-block;margin-top:1rem;padding:9px 20px;
-              background:#4361ee;color:#fff;border-radius:8px;
-              text-decoration:none;font-weight:700;font-size:.875rem;">
-      ← Ke Daftar Inventaris
-    </a>
+    <!-- QR Code -->
+    <div class="label-qr">
+      {% if b.qr_path %}
+        <img src="/static/{{ b.qr_path }}" alt="QR {{ b.kode_barang }}"/>
+      {% else %}
+        <div style="width:100px;height:100px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#cbd5e1;">⬜</div>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="label-info">
+      <div class="label-kode">{{ b.kode_barang }}</div>
+      <div class="label-nama">{{ b.nama_barang }}</div>
+      <div class="label-meta">
+        {{ b.kategori }} {% if b.tipe %}· {{ b.tipe }}{% endif %}<br/>
+        {{ b.jenis_aset or '—' }}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="label-footer">
+      <span class="label-kondisi kondisi-{{ b.kondisi|lower|replace(' ','-') }}">{{ b.kondisi }}</span>
+      <span class="label-tgl">
+        {% if b.tanggal_pengadaan %}{{ b.tanggal_pengadaan.strftime('%d/%m/%Y') }}{% endif %}
+      </span>
+    </div>
   </div>
+  {% endfor %}
+
+  <!-- Padding ke kelipatan 3 -->
+  {% set r = barang_list|length % 3 %}
+  {% if r == 1 %}
+    <div class="empty-label"></div>
+    <div class="empty-label"></div>
+  {% elif r == 2 %}
+    <div class="empty-label"></div>
   {% endif %}
 </div>
 

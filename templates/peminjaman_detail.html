@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Detail Peminjaman{% endblock %}
+{% block page_title %}Detail Peminjaman{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-file-text me-2"></i>{{ pinjam.kode_pinjam }}</h6>
+        <div class="d-flex gap-2">
+          {% if pinjam.status != 'Dikembalikan' %}
+          <a href="{{ url_for('peminjaman_kembalikan', id=pinjam.id) }}" class="btn-primary-custom">
+            <i class="bi bi-arrow-return-left me-1"></i>Proses Pengembalian
+          </a>
+          {% endif %}
+          <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i>Kembali
+          </a>
+        </div>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- Status -->
+        <div class="text-center mb-4">
+          {% if pinjam.status=='Dipinjam' %}
+            <span class="badge-status status-dipinjam" style="font-size:1rem;padding:8px 28px;">
+              <i class="bi bi-arrow-left-right me-2"></i>Sedang Dipinjam
+            </span>
+          {% elif pinjam.status=='Dikembalikan' %}
+            <span class="badge-status status-kembali" style="font-size:1rem;padding:8px 28px;">
+              <i class="bi bi-check-circle me-2"></i>Sudah Dikembalikan
+            </span>
+          {% else %}
+            <span class="badge-status status-terlambat" style="font-size:1rem;padding:8px 28px;">
+              <i class="bi bi-alarm me-2"></i>Terlambat Dikembalikan
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Detail Grid -->
+        <div class="detail-info-grid">
+
+          <!-- Data barang -->
+          <div class="detail-info-item full-width">
+            <div class="detail-info-label"><i class="bi bi-pc-display me-1"></i>Barang Dipinjam</div>
+            <div class="detail-info-value">
+              {{ pinjam.nama_barang }}
+              <code class="kode-text ms-2">{{ pinjam.kode_brg }}</code>
+            </div>
+          </div>
+
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-123 me-1"></i>Jumlah Dipinjam</div>
+            <div class="detail-info-value">{{ pinjam.jumlah_pinjam }} unit</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-tag me-1"></i>Kode Pinjam</div>
+            <div class="detail-info-value"><code>{{ pinjam.kode_pinjam }}</code></div>
+          </div>
+
+          <!-- Data peminjam -->
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-person me-1"></i>Nama Peminjam</div>
+            <div class="detail-info-value">{{ pinjam.nama_peminjam }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-mortarboard me-1"></i>Kelas / Jabatan</div>
+            <div class="detail-info-value">{{ pinjam.kelas_jabatan or '—' }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-phone me-1"></i>No. HP</div>
+            <div class="detail-info-value">{{ pinjam.no_hp or '—' }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-chat-left-text me-1"></i>Keperluan</div>
+            <div class="detail-info-value">{{ pinjam.keperluan or '—' }}</div>
+          </div>
+
+          <!-- ── Timeline Waktu ── -->
+          <div class="detail-info-item full-width">
+            <div class="detail-info-label mb-2"><i class="bi bi-clock-history me-1"></i>Timeline Waktu</div>
+            <div class="timeline-waktu">
+
+              <!-- Waktu Pinjam -->
+              <div class="timeline-item">
+                <div class="timeline-dot dot-pinjam"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">Waktu Pinjam</div>
+                  <div class="timeline-datetime">
+                    {% if pinjam.tgl_pinjam %}
+                      <span class="timeline-tgl">{{ pinjam.tgl_pinjam.strftime('%d %B %Y') }}</span>
+                      <span class="time-badge">{{ pinjam.tgl_pinjam.strftime('%H:%M') }} WIB</span>
+                    {% else %}—{% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Rencana Kembali -->
+              <div class="timeline-item">
+                <div class="timeline-dot dot-rencana {% if pinjam.status=='Terlambat' %}dot-danger{% endif %}"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">Rencana Pengembalian</div>
+                  <div class="timeline-datetime">
+                    {% if pinjam.tgl_kembali_rencana %}
+                      <span class="timeline-tgl">{{ pinjam.tgl_kembali_rencana.strftime('%d %B %Y') }}</span>
+                      <span class="time-badge {% if pinjam.status=='Terlambat' %}time-badge-danger{% endif %}">
+                        {{ pinjam.tgl_kembali_rencana.strftime('%H:%M') }} WIB
+                      </span>
+                    {% else %}—{% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kembali Aktual -->
+              {% if pinjam.tgl_kembali_aktual %}
+              <div class="timeline-item">
+                <div class="timeline-dot dot-kembali"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">Pengembalian Aktual</div>
+                  <div class="timeline-datetime">
+                    <span class="timeline-tgl">{{ pinjam.tgl_kembali_aktual.strftime('%d %B %Y') }}</span>
+                    <span class="time-badge time-badge-success">
+                      {{ pinjam.tgl_kembali_aktual.strftime('%H:%M') }} WIB
+                    </span>
+                  </div>
+                  <!-- Hitung keterlambatan jika ada -->
+                  {% if pinjam.tgl_kembali_aktual > pinjam.tgl_kembali_rencana %}
+                    {% set diff = pinjam.tgl_kembali_aktual - pinjam.tgl_kembali_rencana %}
+                    {% set total_menit = (diff.total_seconds() / 60) | int %}
+                    {% set total_jam   = (total_menit / 60) | int %}
+                    {% set hari        = (total_jam / 24) | int %}
+                    {% set sisa_jam    = total_jam % 24 %}
+                  <div class="text-danger small mt-1">
+                    <i class="bi bi-alarm me-1"></i>
+                    Terlambat
+                    {% if hari > 0 %}{{ hari }} hari {% endif %}
+                    {% if sisa_jam > 0 %}{{ sisa_jam }} jam{% endif %}
+                    {% if hari == 0 and sisa_jam == 0 %}{{ total_menit % 60 }} menit{% endif %}
+                  </div>
+                  {% else %}
+                  <div class="text-success small mt-1">
+                    <i class="bi bi-check-circle me-1"></i>Tepat waktu
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
+            </div><!-- end timeline -->
+          </div>
+
+          <!-- Kondisi Kembali -->
+          {% if pinjam.kondisi_kembali %}
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-shield-check me-1"></i>Kondisi Saat Kembali</div>
+            <div class="detail-info-value">
+              {% if pinjam.kondisi_kembali=='Baik' %}<span class="badge-kondisi kondisi-baik">{{ pinjam.kondisi_kembali }}</span>
+              {% elif pinjam.kondisi_kembali=='Rusak Ringan' %}<span class="badge-kondisi kondisi-ringan">{{ pinjam.kondisi_kembali }}</span>
+              {% else %}<span class="badge-kondisi kondisi-berat">{{ pinjam.kondisi_kembali }}</span>{% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if pinjam.catatan_admin %}
+          <div class="detail-info-item full-width">
+            <div class="detail-info-label"><i class="bi bi-pencil-square me-1"></i>Catatan Admin</div>
+            <div class="detail-info-value">{{ pinjam.catatan_admin }}</div>
+          </div>
+          {% endif %}
+
+        </div><!-- end grid -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

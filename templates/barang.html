@@ -4,191 +4,148 @@
 
 {% block content %}
 <div class="card-panel">
-
-  <!-- ── PANEL HEADER ── -->
   <div class="panel-header">
     <h6 class="panel-title"><i class="bi bi-pc-display me-2"></i>Daftar Barang Inventaris</h6>
-    <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('cetak_label') }}" class="btn-outline-custom" target="_blank">
-        <i class="bi bi-printer me-1"></i> Cetak Label QR
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('barang_list') }}?{{ request.query_string.decode() }}&export=1"
+         onclick="this.href='{{ url_for('export_excel') }}?'+new URLSearchParams({search:'{{ search }}',kategori:'{{ f_kat }}',jenis_aset:'{{ f_jenis }}',kondisi:'{{ f_kondisi }}'}).toString()"
+         class="btn-outline-custom btn-sm-custom" target="_blank">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
       </a>
-      <a href="{{ url_for('export_excel') }}" class="btn-export-excel">
-        <i class="bi bi-file-earmark-excel me-1"></i> Excel
-      </a>
-      <a href="{{ url_for('export_pdf') }}" class="btn-export-pdf">
-        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+      <a href="#" onclick="window.open('{{ url_for('export_pdf') }}?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}')"
+         class="btn-outline-custom btn-sm-custom" style="color:#dc2626;border-color:#dc2626;">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
       </a>
       <a href="{{ url_for('barang_tambah') }}" class="btn-primary-custom">
-        <i class="bi bi-plus-lg me-1"></i> Tambah Barang
+        <i class="bi bi-plus-lg me-1"></i>Tambah Barang
       </a>
     </div>
   </div>
 
-  <!-- ── FILTER & SEARCH ── -->
-  <div class="filter-bar">
-    <form method="GET" action="{{ url_for('barang_list') }}" id="filterForm">
-      <div class="filter-row">
-
-        <!-- Search -->
-        <div class="filter-search">
-          <div class="input-icon-wrap">
-            <i class="bi bi-search input-icon"></i>
-            <input type="text" name="search" class="form-control form-control-search"
-                   placeholder="Cari nama, kode, merk..."
-                   value="{{ search }}"/>
-          </div>
-        </div>
-
-        <!-- Filter Kondisi -->
-        <div class="filter-select-wrap">
-          <select name="kondisi" class="form-select form-control-custom filter-select"
-                  onchange="this.form.submit()">
-            <option value="">Semua Kondisi</option>
-            {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
-            <option value="{{ k }}" {% if filter_kondisi == k %}selected{% endif %}>{{ k }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Filter Kategori -->
-        <div class="filter-select-wrap">
-          <select name="kategori" class="form-select form-control-custom filter-select"
-                  onchange="this.form.submit()">
-            <option value="">Semua Kategori</option>
-            {% for k in all_kategori %}
-            <option value="{{ k }}" {% if filter_kategori == k %}selected{% endif %}>{{ k }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Filter Tipe -->
-        <div class="filter-select-wrap">
-          <select name="tipe" class="form-select form-control-custom filter-select"
-                  onchange="this.form.submit()">
-            <option value="">Semua Tipe</option>
-            {% for t in all_tipe %}
-            <option value="{{ t }}" {% if filter_tipe == t %}selected{% endif %}>{{ t }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Hidden sort fields -->
-        <input type="hidden" name="sort" value="{{ sort_col }}"/>
-        <input type="hidden" name="dir"  value="{{ sort_dir }}"/>
-
-        <button type="submit" class="btn-search">
-          <i class="bi bi-funnel me-1"></i>Filter
-        </button>
-        {% if search or filter_kondisi or filter_kategori or filter_tipe %}
-        <a href="{{ url_for('barang_list') }}" class="btn-reset">
-          <i class="bi bi-x-circle me-1"></i>Reset
-        </a>
-        {% endif %}
+  <!-- FILTER TOOLBAR -->
+  <div class="panel-toolbar flex-column flex-md-row gap-2">
+    <form method="GET" action="{{ url_for('barang_list') }}" class="filter-form" id="filterForm">
+      <div class="input-icon-wrap" style="min-width:220px;">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" name="search" class="form-control form-control-search"
+               placeholder="Cari nama, kode, tipe..." value="{{ search }}"/>
       </div>
+      <select name="kategori" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Kategori</option>
+        {% for k in kategori_list %}
+        <option value="{{ k }}" {% if f_kat==k %}selected{% endif %}>{{ k }}</option>
+        {% endfor %}
+      </select>
+      <select name="jenis_aset" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Jenis</option>
+        {% for j in jenis_aset_list %}
+        <option value="{{ j }}" {% if f_jenis==j %}selected{% endif %}>{{ j }}</option>
+        {% endfor %}
+      </select>
+      <select name="kondisi" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Kondisi</option>
+        <option value="Baik" {% if f_kondisi=='Baik' %}selected{% endif %}>Baik</option>
+        <option value="Rusak Ringan" {% if f_kondisi=='Rusak Ringan' %}selected{% endif %}>Rusak Ringan</option>
+        <option value="Rusak Berat" {% if f_kondisi=='Rusak Berat' %}selected{% endif %}>Rusak Berat</option>
+      </select>
+      <input type="hidden" name="sort" value="{{ sort }}"/>
+      <input type="hidden" name="order" value="{{ order }}"/>
+      <button type="submit" class="btn-search">Cari</button>
+      {% if search or f_kat or f_jenis or f_kondisi %}
+      <a href="{{ url_for('barang_list') }}" class="btn-reset">Reset</a>
+      {% endif %}
     </form>
-
-    <!-- Active filter badges -->
-    {% if search or filter_kondisi or filter_kategori or filter_tipe %}
-    <div class="active-filters mt-2">
-      <span class="filter-label-text">Filter aktif:</span>
-      {% if search %}<span class="filter-badge">Kata kunci: "{{ search }}"</span>{% endif %}
-      {% if filter_kondisi %}<span class="filter-badge">Kondisi: {{ filter_kondisi }}</span>{% endif %}
-      {% if filter_kategori %}<span class="filter-badge">Kategori: {{ filter_kategori }}</span>{% endif %}
-      {% if filter_tipe %}<span class="filter-badge">Tipe: {{ filter_tipe }}</span>{% endif %}
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- ── INFO ROW ── -->
-  <div class="table-info-row">
-    <span>Menampilkan <strong>{{ barang_list|length }}</strong> dari <strong>{{ total_rows }}</strong> data</span>
-    <div class="sort-info">
-      <i class="bi bi-sort-down me-1"></i>
-      Urut: <strong>{{ sort_col.replace('_',' ')|title }}</strong>
-      ({{ 'A→Z' if sort_dir == 'asc' else 'Z→A' }})
+    <div class="table-info ms-md-auto">
+      <strong>{{ total_rows }}</strong> data ditemukan
     </div>
   </div>
 
-  <!-- ── TABLE ── -->
+  <!-- CETAK LABEL TOOLBAR (muncul saat ada checkbox dipilih) -->
+  <div class="cetak-toolbar" id="cetakToolbar" style="display:none;">
+    <i class="bi bi-check2-square me-2"></i>
+    <span id="selectedCount">0</span> barang dipilih —
+    <a href="#" id="btnCetakLabel" class="fw-600 text-primary ms-1">
+      <i class="bi bi-printer me-1"></i>Cetak Label QR
+    </a>
+    <a href="#" onclick="clearCheckbox()" class="text-muted ms-3">Batal Pilih</a>
+  </div>
+
+  <!-- TABLE -->
   <div class="panel-body p-0">
     <div class="table-responsive">
-      <table class="table table-custom mb-0" id="tabelBarang">
+      <table class="table table-custom mb-0">
         <thead>
           <tr>
-            <th style="width:45px">#</th>
-            {% set cols = [
-              ('kode_barang','Kode Barang'),('nama_barang','Nama Barang'),
-              ('kategori','Kategori'),('tipe_barang','Tipe'),
-              ('merk_col','Merk'),('kondisi','Kondisi'),
-              ('jumlah','Jml'),('tanggal_pengadaan','Tgl Pengadaan')
-            ] %}
-            {% for col_id, col_label in cols %}
-              {% set real_col = col_id if col_id != 'merk_col' else 'merk' %}
-              <th class="sortable-col {% if sort_col == real_col %}sort-active{% endif %}"
-                  onclick="sortBy('{{ real_col }}')">
-                {{ col_label }}
-                <span class="sort-icon">
-                  {% if sort_col == real_col %}
-                    <i class="bi bi-caret-{{ 'up' if sort_dir == 'asc' else 'down' }}-fill"></i>
-                  {% else %}
-                    <i class="bi bi-caret-down text-muted opacity-25"></i>
-                  {% endif %}
-                </span>
-              </th>
-            {% endfor %}
-            <th style="width:50px">QR</th>
-            <th style="width:130px">Aksi</th>
+            <th style="width:42px"><input type="checkbox" id="checkAll" class="form-check-input"/></th>
+            <th style="width:44px">#</th>
+            <th>
+              <a href="?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort=kode_barang&order={{ next_order }}" class="sort-link">
+                Kode <i class="bi bi-arrow-down-up ms-1"></i>
+              </a>
+            </th>
+            <th>
+              <a href="?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort=nama_barang&order={{ next_order }}" class="sort-link">
+                Nama Barang <i class="bi bi-arrow-down-up ms-1"></i>
+              </a>
+            </th>
+            <th>
+              <a href="?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort=kategori&order={{ next_order }}" class="sort-link">
+                Kategori <i class="bi bi-arrow-down-up ms-1"></i>
+              </a>
+            </th>
+            <th>Tipe Produk</th>
+            <th>
+              <a href="?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort=jenis_aset&order={{ next_order }}" class="sort-link">
+                Jenis Aset <i class="bi bi-arrow-down-up ms-1"></i>
+              </a>
+            </th>
+            <th>
+              <a href="?search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort=kondisi&order={{ next_order }}" class="sort-link">
+                Kondisi <i class="bi bi-arrow-down-up ms-1"></i>
+              </a>
+            </th>
+            <th>Jml</th>
+            <th>QR</th>
+            <th style="width:120px">Aksi</th>
           </tr>
         </thead>
         <tbody>
-          {% set offset = (page - 1) * 10 %}
+          {% set offset = (page-1)*10 %}
           {% for b in barang_list %}
           <tr>
-            <td class="text-muted">{{ offset + loop.index }}</td>
+            <td><input type="checkbox" class="form-check-input row-check" value="{{ b.id }}" data-id="{{ b.id }}"/></td>
+            <td class="text-muted">{{ offset+loop.index }}</td>
             <td><code class="kode-text">{{ b.kode_barang }}</code></td>
             <td>
               <div class="fw-600">{{ b.nama_barang }}</div>
             </td>
             <td><span class="badge badge-kategori">{{ b.kategori }}</span></td>
-            <td><span class="badge badge-tipe">{{ b.tipe_barang }}</span></td>
-            <td>{{ b.merk or '—' }}</td>
+            <td class="text-muted small">{{ b.tipe or '—' }}</td>
             <td>
-              {% if b.kondisi == 'Baik' %}
-                <span class="badge-kondisi kondisi-baik">{{ b.kondisi }}</span>
-              {% elif b.kondisi == 'Rusak Ringan' %}
-                <span class="badge-kondisi kondisi-ringan">{{ b.kondisi }}</span>
+              {% if b.jenis_aset == 'Aset Tetap' %}
+                <span class="badge-jenis jenis-tetap"><i class="bi bi-building me-1"></i>Tetap</span>
               {% else %}
-                <span class="badge-kondisi kondisi-berat">{{ b.kondisi }}</span>
+                <span class="badge-jenis jenis-bergerak"><i class="bi bi-arrows-move me-1"></i>Bergerak</span>
               {% endif %}
+            </td>
+            <td>
+              {% if b.kondisi=='Baik' %}<span class="badge-kondisi kondisi-baik">{{ b.kondisi }}</span>
+              {% elif b.kondisi=='Rusak Ringan' %}<span class="badge-kondisi kondisi-ringan">{{ b.kondisi }}</span>
+              {% else %}<span class="badge-kondisi kondisi-berat">{{ b.kondisi }}</span>{% endif %}
             </td>
             <td class="text-center fw-600">{{ b.jumlah }}</td>
-            <td class="text-muted small">
-              {{ b.tanggal_pengadaan.strftime('%d/%m/%Y') if b.tanggal_pengadaan else '—' }}
-            </td>
             <td>
               {% if b.qr_path %}
-                <img src="{{ url_for('static', filename=b.qr_path) }}"
-                     alt="QR" class="qr-thumb"
-                     data-bs-toggle="modal" data-bs-target="#qrModal{{ b.id }}"
-                     style="cursor:pointer;"/>
-              {% else %}
-                <span class="text-muted">—</span>
-              {% endif %}
+                <img src="{{ url_for('static', filename=b.qr_path) }}" alt="QR"
+                     class="qr-thumb" data-bs-toggle="modal" data-bs-target="#qrModal{{ b.id }}"
+                     style="cursor:pointer;" title="Klik untuk perbesar"/>
+              {% else %}<span class="text-muted">—</span>{% endif %}
             </td>
             <td>
               <div class="action-buttons">
-                <a href="{{ url_for('barang_detail', kode=b.kode_barang) }}"
-                   class="btn-action btn-detail" title="Detail" target="_blank">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{{ url_for('barang_edit', id=b.id) }}"
-                   class="btn-action btn-edit" title="Edit">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <button class="btn-action btn-delete" title="Hapus"
-                        onclick="confirmDelete({{ b.id }},'{{ b.nama_barang }}')">
-                  <i class="bi bi-trash"></i>
-                </button>
+                <a href="{{ url_for('barang_detail', kode=b.kode_barang) }}" class="btn-action btn-detail" title="Detail" target="_blank"><i class="bi bi-eye"></i></a>
+                <a href="{{ url_for('barang_edit', id=b.id) }}" class="btn-action btn-edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                <button class="btn-action btn-delete" title="Hapus" onclick="confirmDelete({{ b.id }},'{{ b.nama_barang }}')"><i class="bi bi-trash"></i></button>
               </div>
             </td>
           </tr>
@@ -196,11 +153,7 @@
           <tr>
             <td colspan="11" class="text-center text-muted py-5">
               <i class="bi bi-inbox display-6 d-block mb-2"></i>
-              {% if search or filter_kondisi or filter_kategori or filter_tipe %}
-                Tidak ada data yang sesuai filter
-              {% else %}
-                Belum ada data inventaris
-              {% endif %}
+              {% if search or f_kat or f_jenis or f_kondisi %}Tidak ada hasil untuk filter yang dipilih{% else %}Belum ada data inventaris{% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -209,35 +162,21 @@
     </div>
   </div>
 
-  <!-- ── PAGINATION ── -->
   {% if total_pages > 1 %}
   <div class="panel-footer">
-    <nav>
-      <ul class="pagination-custom">
-        <li class="{% if page == 1 %}disabled{% endif %}">
-          <a href="?page={{ page-1 }}&search={{ search }}&kondisi={{ filter_kondisi }}&kategori={{ filter_kategori }}&tipe={{ filter_tipe }}&sort={{ sort_col }}&dir={{ sort_dir }}">
-            <i class="bi bi-chevron-left"></i>
-          </a>
-        </li>
-        {% for p in range(1, total_pages + 1) %}
-        <li class="{% if p == page %}active{% endif %}">
-          <a href="?page={{ p }}&search={{ search }}&kondisi={{ filter_kondisi }}&kategori={{ filter_kategori }}&tipe={{ filter_tipe }}&sort={{ sort_col }}&dir={{ sort_dir }}">{{ p }}</a>
-        </li>
-        {% endfor %}
-        <li class="{% if page == total_pages %}disabled{% endif %}">
-          <a href="?page={{ page+1 }}&search={{ search }}&kondisi={{ filter_kondisi }}&kategori={{ filter_kategori }}&tipe={{ filter_tipe }}&sort={{ sort_col }}&dir={{ sort_dir }}">
-            <i class="bi bi-chevron-right"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
+    <nav><ul class="pagination-custom">
+      <li class="{% if page==1 %}disabled{% endif %}"><a href="?page={{ page-1 }}&search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort={{ sort }}&order={{ order }}"><i class="bi bi-chevron-left"></i></a></li>
+      {% for p in range(1, total_pages+1) %}
+      <li class="{% if p==page %}active{% endif %}"><a href="?page={{ p }}&search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort={{ sort }}&order={{ order }}">{{ p }}</a></li>
+      {% endfor %}
+      <li class="{% if page==total_pages %}disabled{% endif %}"><a href="?page={{ page+1 }}&search={{ search }}&kategori={{ f_kat }}&jenis_aset={{ f_jenis }}&kondisi={{ f_kondisi }}&sort={{ sort }}&order={{ order }}"><i class="bi bi-chevron-right"></i></a></li>
+    </ul></nav>
   </div>
   {% endif %}
 </div>
 
-<!-- ── QR MODALS ── -->
-{% for b in barang_list %}
-{% if b.qr_path %}
+<!-- QR MODALS -->
+{% for b in barang_list %}{% if b.qr_path %}
 <div class="modal fade" id="qrModal{{ b.id }}" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content qr-modal">
@@ -246,47 +185,31 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body text-center">
-        <img src="{{ url_for('static', filename=b.qr_path) }}"
-             alt="QR" class="img-fluid mb-2" style="max-width:200px;"/>
-        <div class="kode-text-lg">{{ b.kode_barang }}</div>
+        <img src="{{ url_for('static', filename=b.qr_path) }}" alt="QR" class="img-fluid mb-2" style="max-width:200px;"/>
         <div class="text-muted small">{{ b.nama_barang }}</div>
-        <div class="mt-1">
-          <span class="badge badge-tipe">{{ b.tipe_barang }}</span>
-          <span class="badge badge-kategori">{{ b.kategori }}</span>
-        </div>
       </div>
-      <div class="modal-footer border-0 pt-0 justify-content-center">
-        <a href="{{ url_for('static', filename=b.qr_path) }}"
-           download="qr_{{ b.kode_barang }}.png"
-           class="btn-primary-custom btn-sm-custom">
-          <i class="bi bi-download me-1"></i> Download QR
-        </a>
-        <a href="{{ url_for('cetak_label') }}?ids={{ b.id }}"
-           target="_blank" class="btn-outline-custom btn-sm-custom">
-          <i class="bi bi-printer me-1"></i> Cetak Label
-        </a>
+      <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+        <a href="{{ url_for('static', filename=b.qr_path) }}" download="qr_{{ b.kode_barang }}.png" class="btn-primary-custom btn-sm-custom"><i class="bi bi-download me-1"></i>Download</a>
+        <a href="{{ url_for('cetak_label') }}?ids={{ b.id }}" class="btn-outline-custom btn-sm-custom" target="_blank"><i class="bi bi-printer me-1"></i>Cetak Label</a>
       </div>
     </div>
   </div>
 </div>
-{% endif %}
-{% endfor %}
+{% endif %}{% endfor %}
 
-<!-- ── DELETE MODAL ── -->
+<!-- DELETE MODAL -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
       <div class="modal-body text-center py-4">
         <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
         <h6 class="fw-700 mt-3 mb-1">Hapus Barang?</h6>
-        <p class="text-muted small mb-1" id="deleteBarangName"></p>
+        <p class="text-muted small mb-0" id="deleteBarangName"></p>
         <p class="text-muted small">Tindakan ini tidak dapat dibatalkan.</p>
       </div>
       <div class="modal-footer border-0 justify-content-center gap-2 pt-0">
         <button class="btn-outline-custom" data-bs-dismiss="modal">Batal</button>
-        <form id="deleteForm" method="POST">
-          <button type="submit" class="btn-danger-custom">Ya, Hapus</button>
-        </form>
+        <form id="deleteForm" method="POST"><button type="submit" class="btn-danger-custom">Ya, Hapus</button></form>
       </div>
     </div>
   </div>
@@ -295,18 +218,36 @@
 
 {% block scripts %}
 <script>
-// ── Sort kolom ──────────────────────────────────────────────
-function sortBy(col) {
-  const params  = new URLSearchParams(window.location.search);
-  const current = params.get('sort');
-  const curDir  = params.get('dir') || 'desc';
-  params.set('sort', col);
-  params.set('dir',  (current === col && curDir === 'desc') ? 'asc' : 'desc');
-  params.set('page', 1);
-  window.location.search = params.toString();
+// Checkbox select all
+const checkAll = document.getElementById('checkAll');
+const toolbar  = document.getElementById('cetakToolbar');
+const countEl  = document.getElementById('selectedCount');
+const btnCetak = document.getElementById('btnCetakLabel');
+
+function updateToolbar() {
+  const checked = document.querySelectorAll('.row-check:checked');
+  if (checked.length > 0) {
+    toolbar.style.display = 'flex';
+    countEl.textContent = checked.length;
+    const ids = [...checked].map(c => c.value).join(',');
+    btnCetak.href = '{{ url_for("cetak_label") }}?ids=' + ids;
+  } else {
+    toolbar.style.display = 'none';
+  }
 }
 
-// ── Konfirmasi hapus ────────────────────────────────────────
+checkAll.addEventListener('change', function() {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = this.checked);
+  updateToolbar();
+});
+document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', updateToolbar));
+
+function clearCheckbox() {
+  checkAll.checked = false;
+  document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+  toolbar.style.display = 'none';
+}
+
 function confirmDelete(id, nama) {
   document.getElementById('deleteBarangName').textContent = nama;
   document.getElementById('deleteForm').action = '/barang/hapus/' + id;

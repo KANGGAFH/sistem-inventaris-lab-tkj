@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Pengembalian Barang{% endblock %}
+{% block page_title %}Proses Pengembalian Barang{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7">
+
+    <!-- Info Peminjaman -->
+    <div class="card-panel mb-3">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-info-circle me-2"></i>Info Peminjaman</h6>
+        <code class="kode-text">{{ pinjam.kode_pinjam }}</code>
+      </div>
+      <div class="panel-body">
+        <div class="detail-info-grid">
+          <div class="detail-info-item">
+            <div class="detail-info-label">Nama Peminjam</div>
+            <div class="detail-info-value">{{ pinjam.nama_peminjam }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label">Kelas / Jabatan</div>
+            <div class="detail-info-value">{{ pinjam.kelas_jabatan or '—' }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label">Barang Dipinjam</div>
+            <div class="detail-info-value">{{ pinjam.nama_barang }}</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label">Jumlah</div>
+            <div class="detail-info-value">{{ pinjam.jumlah_pinjam }} unit</div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-clock me-1"></i>Waktu Pinjam</div>
+            <div class="detail-info-value">
+              {% if pinjam.tgl_pinjam %}
+                {{ pinjam.tgl_pinjam.strftime('%d %B %Y') }}
+                <span class="time-badge">{{ pinjam.tgl_pinjam.strftime('%H:%M') }} WIB</span>
+              {% else %}—{% endif %}
+            </div>
+          </div>
+          <div class="detail-info-item">
+            <div class="detail-info-label"><i class="bi bi-calendar-check me-1"></i>Rencana Kembali</div>
+            <div class="detail-info-value {% if pinjam.status=='Terlambat' %}text-danger{% endif %}">
+              {% if pinjam.tgl_kembali_rencana %}
+                {{ pinjam.tgl_kembali_rencana.strftime('%d %B %Y') }}
+                <span class="time-badge {% if pinjam.status=='Terlambat' %}time-badge-danger{% endif %}">
+                  {{ pinjam.tgl_kembali_rencana.strftime('%H:%M') }} WIB
+                </span>
+                {% if pinjam.status=='Terlambat' %}
+                  <div class="text-danger small fw-600 mt-1">
+                    <i class="bi bi-alarm me-1"></i>Sudah Melewati Batas Waktu!
+                  </div>
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Pengembalian -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-arrow-return-left me-2"></i>Form Pengembalian</h6>
+        <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">
+          <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+      </div>
+      <div class="panel-body">
+        <form method="POST" id="formKembali">
+
+          <!-- Waktu Kembali Aktual -->
+          <div class="section-divider mb-3">
+            <i class="bi bi-clock-history me-1"></i>Waktu Pengembalian Aktual
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label-custom required">Tanggal Kembali</label>
+              <input type="date" name="tgl_kembali_aktual" id="tglAktual"
+                     class="form-control form-control-custom"
+                     value="{{ today_date }}" required
+                     onchange="updatePreview()"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-custom required">Jam Kembali (24 Jam)</label>
+              <div class="jam-selector">
+                <select id="jamAktualHH" class="form-select jam-select"
+                        onchange="syncJamAktual(); updatePreview();">
+                  {% for h in range(0,24) %}
+                  <option value="{{ '%02d'|format(h) }}"
+                    {{ 'selected' if '%02d'|format(h) == today_time[:2] }}>
+                    {{ '%02d'|format(h) }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <span class="jam-sep">:</span>
+                <select id="jamAktualMM" class="form-select jam-select"
+                        onchange="syncJamAktual(); updatePreview();">
+                  {% for m in [0,5,10,15,20,25,30,35,40,45,50,55] %}
+                  <option value="{{ '%02d'|format(m) }}"
+                    {{ 'selected' if '%02d'|format(m) == today_time[3:5] }}>
+                    {{ '%02d'|format(m) }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <span class="jam-wib">WIB</span>
+              </div>
+              <input type="hidden" name="jam_kembali_aktual" id="jamAktual" value="{{ today_time }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-custom">&nbsp;</label>
+              <div class="waktu-preview">
+                <i class="bi bi-clock-history me-2"></i>
+                <span id="previewAktual">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keterlambatan -->
+          <div id="terlambatBox" class="terlambat-box mb-3" style="display:none;">
+            <i class="bi bi-alarm-fill me-2"></i>
+            Terlambat <strong id="terlambatText"></strong> dari waktu yang disepakati
+          </div>
+          <div id="tepatBox" class="durasi-box mb-3" style="display:none;">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Pengembalian tepat waktu
+          </div>
+
+          <!-- Kondisi -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label-custom required">Kondisi Barang Saat Kembali</label>
+              <div class="kondisi-selector mt-1">
+                {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
+                <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
+                  <input type="radio" name="kondisi_kembali" value="{{ k }}"
+                         {% if k=='Baik' %}checked{% endif %}/>
+                  <span>{{ k }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-custom">Catatan Admin</label>
+            <textarea name="catatan_admin" class="form-control form-control-custom" rows="2"
+                      placeholder="Catatan kondisi, kerusakan, dll..."></textarea>
+          </div>
+
+          <div class="info-box mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            Jika kondisi kembali lebih buruk dari kondisi awal, status barang di inventaris
+            akan diperbarui otomatis.
+          </div>
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn-primary-custom">
+              <i class="bi bi-check-lg me-1"></i>Konfirmasi Pengembalian
+            </button>
+            <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
+               'Juli','Agustus','September','Oktober','November','Desember'];
+
+// Waktu rencana kembali dari server
+const rencanaStr = "{{ pinjam.tgl_kembali_rencana.strftime('%Y-%m-%dT%H:%M') if pinjam.tgl_kembali_rencana else '' }}";
+const rencana    = rencanaStr ? new Date(rencanaStr) : null;
+
+function syncJamAktual() {
+  const hh = document.getElementById('jamAktualHH').value;
+  const mm = document.getElementById('jamAktualMM').value;
+  document.getElementById('jamAktual').value = `${hh}:${mm}`;
+}
+syncJamAktual();
+
+function getJamAktual() {
+  return `${document.getElementById('jamAktualHH').value}:${document.getElementById('jamAktualMM').value}`;
+}
+
+function formatDT(tgl, jamStr) {
+  if (!tgl || !jamStr) return '—';
+  const d = new Date(`${tgl}T${jamStr}:00`);
+  return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()} · ${jamStr} WIB`;
+}
+
+function hitungKeterlambatan(aktual) {
+  if (!rencana || aktual <= rencana) return null;
+  const diff     = aktual - rencana;
+  const totalJam = Math.floor(diff / (1000*60*60));
+  const hari     = Math.floor(totalJam / 24);
+  const sisaJam  = totalJam % 24;
+  const menit    = Math.floor((diff % (1000*60*60)) / (1000*60));
+  let hasil = '';
+  if (hari > 0)    hasil += `${hari} hari `;
+  if (sisaJam > 0) hasil += `${sisaJam} jam `;
+  if (menit > 0 && hari === 0) hasil += `${menit} menit`;
+  return hasil.trim() || null;
+}
+
+function updatePreview() {
+  syncJamAktual();
+  const tgl = document.getElementById('tglAktual').value;
+  const jam = getJamAktual();
+
+  document.getElementById('previewAktual').textContent = formatDT(tgl, jam);
+
+  if (tgl && jam && rencana) {
+    const aktual        = new Date(`${tgl}T${jam}:00`);
+    const keterlambatan = hitungKeterlambatan(aktual);
+    const tBox          = document.getElementById('terlambatBox');
+    const pBox          = document.getElementById('tepatBox');
+
+    if (keterlambatan) {
+      document.getElementById('terlambatText').textContent = keterlambatan;
+      tBox.style.display = 'flex';
+      pBox.style.display = 'none';
+    } else {
+      tBox.style.display = 'none';
+      pBox.style.display = 'flex';
+    }
+  }
+}
+updatePreview();
+</script>
+{% endblock %}

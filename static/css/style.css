@@ -991,3 +991,302 @@ body {
   padding: 2px 10px;
   border-radius: 4px;
 }
+
+/* ── PEMINJAMAN ──────────────────────────────────────────── */
+.badge-pinjam {
+  font-size: .72rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+  display: inline-block; white-space: nowrap;
+}
+.pinjam-dipinjam { background: #dbeafe; color: #1d4ed8; }
+.pinjam-kembali  { background: #d1fae5; color: #065f46; }
+.pinjam-terlambat{ background: #fee2e2; color: #991b1b; }
+
+.row-terlambat td { background: #fff7f7 !important; }
+
+/* Alert banner */
+.alert-banner {
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  font-size: .875rem; font-weight: 600;
+  display: flex; align-items: center;
+}
+.banner-dipinjam  { background: #dbeafe; color: #1e40af; border: 1.5px solid #bfdbfe; }
+.banner-terlambat { background: #fee2e2; color: #991b1b; border: 1.5px solid #fecaca; }
+.banner-kembali   { background: #d1fae5; color: #065f46; border: 1.5px solid #a7f3d0; }
+
+/* Return summary box */
+.return-summary {
+  background: #f8faff; border: 1.5px solid #e0e7ff;
+  border-radius: var(--radius-sm); padding: 16px 20px;
+}
+.return-summary-title {
+  font-size: .85rem; font-weight: 700; color: var(--primary);
+  margin-bottom: 12px;
+}
+.return-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px;
+}
+.return-item {}
+.return-label {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-muted); margin-bottom: 2px;
+}
+.return-value { font-size: .875rem; color: var(--text-main); }
+
+/* Detail info table */
+.detail-info-table { display: flex; flex-direction: column; gap: 8px; }
+.dit-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;
+}
+.dit-row:last-child { border-bottom: none; }
+.dit-label {
+  font-size: .75rem; font-weight: 700; color: var(--text-muted);
+  min-width: 120px; flex-shrink: 0;
+}
+.dit-value { font-size: .875rem; color: var(--text-main); }
+
+/* Timeline peminjaman */
+.pinjam-timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding-bottom: 16px; position: relative;
+}
+.timeline-item::before {
+  content: ''; position: absolute;
+  left: 15px; top: 32px; bottom: 0;
+  width: 2px; background: #e2e8f0;
+}
+.timeline-item:last-child::before { display: none; }
+.tl-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0; z-index: 1;
+}
+.timeline-item.done .tl-dot   { background: #d1fae5; color: #065f46; }
+.timeline-item.pending .tl-dot { background: #fef3c7; color: #92400e; }
+.tl-title { font-size: .875rem; font-weight: 700; color: var(--text-main); }
+.tl-date  { font-size: .8rem; color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════════════════
+   TAMBAHAN v2.0 — Filter, Sorting, Peminjaman, Label, Jenis Aset
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Filter Form ─────────────────────────────────────────── */
+.filter-form {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1;
+}
+.filter-select {
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  padding: 7px 12px; font-size: .85rem; font-family: var(--font-main);
+  color: var(--text-main); min-width: 140px; cursor: pointer;
+  transition: border-color .2s;
+}
+.filter-select:focus { border-color: var(--primary); outline: none; }
+
+/* ── Sort Link ───────────────────────────────────────────── */
+.sort-link {
+  color: var(--text-muted); text-decoration: none; font-size: .75rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  white-space: nowrap; transition: color .15s;
+}
+.sort-link:hover { color: var(--primary); }
+
+/* ── Cetak Toolbar ───────────────────────────────────────── */
+.cetak-toolbar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 10px 20px; background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  font-size: .85rem; color: #1d4ed8;
+}
+
+/* ── Jenis Aset Badge ────────────────────────────────────── */
+.badge-jenis {
+  font-size: .72rem; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; display: inline-flex; align-items: center;
+  white-space: nowrap;
+}
+.jenis-tetap    { background: #e0e7ff; color: #3730a3; }
+.jenis-bergerak { background: #fce7f3; color: #9d174d; }
+
+/* ── Jenis Selector (Form) ───────────────────────────────── */
+.jenis-selector { display: flex; gap: 8px; flex-wrap: wrap; }
+.jenis-option {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  font-size: .825rem; font-weight: 600; transition: .15s;
+  border: 2px solid transparent;
+}
+.jenis-option input[type=radio] { display: none; }
+.jenis-aset-tetap    { background: #e0e7ff; color: #3730a3; }
+.jenis-aset-bergerak { background: #fce7f3; color: #9d174d; }
+.jenis-option:has(input:checked) { border-color: currentColor; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+
+/* ── Kode Preview (Form) ─────────────────────────────────── */
+.kode-preview {
+  background: #f8faff; border: 1.5px dashed #c7d2fe;
+  border-radius: var(--radius-sm); padding: 10px 16px;
+  font-size: .85rem; color: #4338ca;
+  display: flex; align-items: center;
+}
+
+/* ── Section Divider (Form) ──────────────────────────────── */
+.section-divider {
+  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text-muted);
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+
+/* ── Peminjaman Status Badge ─────────────────────────────── */
+.badge-status {
+  font-size: .72rem; font-weight: 700; padding: 4px 12px;
+  border-radius: 20px; display: inline-block; white-space: nowrap;
+}
+.status-dipinjam  { background: #dbeafe; color: #1d4ed8; }
+.status-kembali   { background: #d1fae5; color: #065f46; }
+.status-terlambat { background: #fee2e2; color: #991b1b; }
+
+/* ── Terlambat Row Highlight ─────────────────────────────── */
+.tr-terlambat { background: #fff7f7 !important; }
+.tr-terlambat:hover { background: #fff0f0 !important; }
+
+/* ── Detail Info Grid (reuse di peminjaman) ──────────────── */
+.detail-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.detail-info-item.full-width { grid-column: span 2; }
+.detail-info-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:3px; }
+.detail-info-value { font-size:.9rem; font-weight:600; color:var(--text-main); }
+
+/* ── Danger Soft Background ──────────────────────────────── */
+.bg-danger-soft { background: #fee2e2 !important; color: #b91c1c !important; }
+
+/* ── Responsive Tambahan ─────────────────────────────────── */
+@media (max-width: 767px) {
+  .detail-info-grid { grid-template-columns: 1fr; }
+  .detail-info-item.full-width { grid-column: 1; }
+  .filter-form { flex-direction: column; align-items: stretch; }
+  .filter-select { min-width: 100%; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DATETIME PEMINJAMAN — Waktu & Timeline
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Waktu Preview Box ───────────────────────────────────── */
+.waktu-preview {
+  display: flex; align-items: center;
+  background: #f8faff; border: 1.5px solid #c7d2fe;
+  border-radius: var(--radius-sm); padding: 9px 14px;
+  font-size: .82rem; color: #4338ca; min-height: 42px;
+  font-weight: 500;
+}
+
+/* ── Durasi Box ──────────────────────────────────────────── */
+.durasi-box {
+  display: flex; align-items: center;
+  background: #f0fdf4; border: 1.5px solid #bbf7d0;
+  border-radius: var(--radius-sm); padding: 10px 16px;
+  font-size: .85rem; color: #166534;
+}
+
+/* ── Terlambat Box ───────────────────────────────────────── */
+.terlambat-box {
+  display: flex; align-items: center;
+  background: #fff7ed; border: 1.5px solid #fed7aa;
+  border-radius: var(--radius-sm); padding: 10px 16px;
+  font-size: .85rem; color: #9a3412;
+}
+
+/* ── Time Badge (inline jam) ─────────────────────────────── */
+.time-badge {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: .75rem; font-weight: 700;
+  background: #e0e7ff; color: #3730a3;
+  padding: 2px 9px; border-radius: 20px; margin-left: 6px;
+}
+.time-badge-danger  { background: #fee2e2; color: #991b1b; }
+.time-badge-success { background: #d1fae5; color: #065f46; }
+
+/* ── Timeline Waktu ──────────────────────────────────────── */
+.timeline-waktu {
+  display: flex; flex-direction: column; gap: 0;
+  padding-left: 8px;
+}
+
+.timeline-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  position: relative; padding-bottom: 20px;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+
+/* Garis vertikal penghubung */
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 7px; top: 20px;
+  width: 2px; bottom: 0;
+  background: #e2e8f0;
+}
+
+.timeline-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 3px; border: 3px solid #fff;
+  box-shadow: 0 0 0 2px currentColor;
+}
+.dot-pinjam  { background: #4361ee; color: #4361ee; }
+.dot-rencana { background: #ffd166; color: #ffd166; }
+.dot-danger  { background: #ef233c; color: #ef233c; }
+.dot-kembali { background: #06d6a0; color: #06d6a0; }
+
+.timeline-label {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-muted); margin-bottom: 3px;
+}
+.timeline-tgl {
+  font-size: .875rem; font-weight: 600; color: var(--text-main);
+}
+.timeline-datetime { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+
+/* ── Jam Selector 24 Jam ─────────────────────────────────── */
+.jam-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.jam-select {
+  width: 68px !important;
+  padding: 8px 6px !important;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s;
+  appearance: none;       /* hapus panah default browser */
+  -webkit-appearance: none;
+  background: var(--bg-white);
+}
+.jam-select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(67,97,238,.12);
+}
+.jam-sep {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  flex-shrink: 0;
+  margin: 0 1px;
+}
+.jam-wib {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
