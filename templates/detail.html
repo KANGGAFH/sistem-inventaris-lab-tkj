@@ -16,8 +16,7 @@
   <div class="detail-header">
     <div class="detail-header-icon">
       <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
-           alt="Logo SMKN 1 Jakarta Utara"
-           class="detail-header-logo"/>
+           alt="Logo" class="detail-header-logo"/>
     </div>
     <div>
       <h5 class="detail-header-title">{{ barang.nama_barang }}</h5>
@@ -33,6 +32,7 @@
   </div>
 
   <div class="detail-body-wrap">
+
     <!-- QR Code -->
     <div class="detail-qr-section text-center mb-4">
       {% if barang.qr_path %}
@@ -42,7 +42,7 @@
       {% endif %}
     </div>
 
-    <!-- Detail Info -->
+    <!-- Info Barang -->
     <div class="detail-info-grid">
       <div class="detail-info-item">
         <div class="detail-info-label"><i class="bi bi-tag-fill me-1"></i>Kode Barang</div>
@@ -52,12 +52,18 @@
         <div class="detail-info-label"><i class="bi bi-grid me-1"></i>Kategori</div>
         <div class="detail-info-value">{{ barang.kategori }}</div>
       </div>
+      {% if barang.tipe %}
       <div class="detail-info-item">
-        <div class="detail-info-label"><i class="bi bi-building me-1"></i>Merk</div>
-        <div class="detail-info-value">{{ barang.merk or '—' }}</div>
+        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Tipe / Spesifikasi</div>
+        <div class="detail-info-value">{{ barang.tipe }}</div>
+      </div>
+      {% endif %}
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-building me-1"></i>Jenis Aset</div>
+        <div class="detail-info-value">{{ barang.jenis_aset or '—' }}</div>
       </div>
       <div class="detail-info-item">
-        <div class="detail-info-label"><i class="bi bi-123 me-1"></i>Jumlah</div>
+        <div class="detail-info-label"><i class="bi bi-123 me-1"></i>Jumlah Unit</div>
         <div class="detail-info-value">{{ barang.jumlah }} unit</div>
       </div>
       <div class="detail-info-item">
@@ -70,7 +76,7 @@
       </div>
       {% if barang.spesifikasi %}
       <div class="detail-info-item full-width">
-        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Spesifikasi</div>
+        <div class="detail-info-label"><i class="bi bi-list-ul me-1"></i>Spesifikasi Teknis</div>
         <div class="detail-info-value">{{ barang.spesifikasi }}</div>
       </div>
       {% endif %}
@@ -86,6 +92,34 @@
       </div>
     </div>
 
+    <!-- ═══ TOMBOL PEMINJAMAN ══════════════════════════════ -->
+    {% if barang.kondisi == 'Baik' %}
+    <div class="detail-pinjam-section mt-4">
+      <div class="detail-pinjam-box">
+        <div class="detail-pinjam-info">
+          <i class="bi bi-arrow-left-right detail-pinjam-icon"></i>
+          <div>
+            <div class="detail-pinjam-label">Barang ini tersedia untuk dipinjam</div>
+            <div class="detail-pinjam-sub">Stok: {{ barang.jumlah }} unit · Kondisi: {{ barang.kondisi }}</div>
+          </div>
+        </div>
+        <a href="{{ url_for('peminjaman_tambah') }}?barang_id={{ barang.id }}"
+           class="btn-pinjam-detail">
+          <i class="bi bi-arrow-left-right me-2"></i>Pinjam Barang Ini
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="detail-pinjam-section mt-4">
+      <div class="detail-pinjam-box detail-pinjam-unavail">
+        <i class="bi bi-exclamation-triangle-fill me-2" style="color:#b45309;font-size:1.2rem;"></i>
+        <span style="color:#92400e;font-size:.875rem;font-weight:600;">
+          Barang tidak dapat dipinjam — kondisi {{ barang.kondisi }}
+        </span>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Riwayat Scan -->
     {% if riwayat %}
     <div class="detail-scan-history mt-4">
@@ -96,7 +130,9 @@
       <div class="scan-history-item">
         <i class="bi bi-qr-code-scan text-primary me-2"></i>
         <span class="scan-ip">{{ r.ip_scanner or 'Unknown' }}</span>
-        <span class="ms-auto text-muted small">{{ r.scanned_at.strftime('%d/%m/%Y %H:%M') if r.scanned_at else '' }}</span>
+        <span class="ms-auto text-muted small">
+          {{ r.scanned_at.strftime('%d/%m/%Y %H:%M') if r.scanned_at else '' }}
+        </span>
       </div>
       {% endfor %}
     </div>
@@ -104,8 +140,8 @@
 
     <div class="text-center mt-4">
       <div class="text-muted small">
-        <i class="bi bi-info-circle me-1"></i>
-        Halaman ini diakses via scan QR Code
+        <i class="bi bi-qr-code me-1"></i>
+        SMKN 1 Cikarang Selatan — Lab TJKT
       </div>
     </div>
   </div>

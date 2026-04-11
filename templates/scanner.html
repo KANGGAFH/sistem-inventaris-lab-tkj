@@ -3,7 +3,6 @@
 {% block page_title %}Scan QR Code{% endblock %}
 
 {% block head %}
-<!-- html5-qrcode library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 {% endblock %}
 
@@ -14,7 +13,9 @@
     <!-- SCANNER CARD -->
     <div class="card-panel mb-4">
       <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-qr-code-scan me-2"></i>Scanner QR Code</h6>
+        <h6 class="panel-title">
+          <i class="bi bi-qr-code-scan me-2"></i>Scanner QR Code
+        </h6>
         <span class="scanner-status" id="scannerStatus">
           <span class="status-dot"></span> Siap
         </span>
@@ -49,7 +50,7 @@
           <div class="divider-text">atau input manual</div>
           <div class="d-flex gap-2 mt-3">
             <input type="text" id="manualKode" class="form-control form-control-custom"
-                   placeholder="Masukkan kode barang (contoh: KOM-COR-2026-0001)"/>
+                   placeholder="Contoh: KOM-2024-0001 atau CSM-KBL-2024-0001"/>
             <button class="btn-primary-custom" onclick="searchManual()">
               <i class="bi bi-search"></i>
             </button>
@@ -58,17 +59,40 @@
       </div>
     </div>
 
-    <!-- RESULT CARD -->
+    <!-- LOADING CARD -->
+    <div class="card-panel" id="loadingCard" style="display:none;">
+      <div class="panel-body text-center py-4">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <div class="text-muted">Mencari data barang...</div>
+      </div>
+    </div>
+
+    <!-- RESULT CARD — Inventaris Tetap -->
     <div class="card-panel" id="resultCard" style="display:none;">
       <div class="panel-header">
-        <h6 class="panel-title"><i class="bi bi-check-circle-fill me-2 text-success"></i>Hasil Scan</h6>
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill text-success"></i>
+          <h6 class="panel-title mb-0">Hasil Scan — Inventaris Tetap</h6>
+        </div>
         <button class="btn-outline-custom btn-sm-custom" onclick="resetResult()">
           <i class="bi bi-arrow-counterclockwise me-1"></i> Scan Lagi
         </button>
       </div>
-      <div class="panel-body" id="resultContent">
-        <!-- Populated by JS -->
+      <div class="panel-body" id="resultContent"></div>
+    </div>
+
+    <!-- RESULT CARD — Barang Habis Pakai -->
+    <div class="card-panel" id="resultCardConsumable" style="display:none;">
+      <div class="panel-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill text-success"></i>
+          <h6 class="panel-title mb-0">Hasil Scan — Barang Habis Pakai</h6>
+        </div>
+        <button class="btn-outline-custom btn-sm-custom" onclick="resetResult()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Scan Lagi
+        </button>
       </div>
+      <div class="panel-body" id="resultContentConsumable"></div>
     </div>
 
     <!-- NOT FOUND CARD -->
@@ -77,6 +101,7 @@
         <i class="bi bi-x-circle-fill display-5 text-danger mb-3 d-block"></i>
         <h6 class="fw-700">Barang Tidak Ditemukan</h6>
         <p class="text-muted" id="notFoundMessage">Kode QR tidak terdaftar dalam sistem.</p>
+        <p class="text-muted small" id="notFoundRaw"></p>
         <button class="btn-primary-custom mt-2" onclick="resetResult()">
           <i class="bi bi-arrow-counterclockwise me-1"></i> Scan Lagi
         </button>
@@ -90,36 +115,33 @@
 {% block scripts %}
 <script>
 let html5QrcodeScanner = null;
-let isScanning = false;
+let isScanning  = false;
 let lastScanned = '';
 
 // ── Mulai Scanner ────────────────────────────────────────
 function startScanner() {
-  document.getElementById('scannerOverlay').style.display = 'none';
-  document.getElementById('btnStart').style.display = 'none';
-  document.getElementById('btnStop').style.display = 'inline-flex';
-  document.getElementById('scannerStatus').innerHTML = '<span class="status-dot active"></span> Scanning...';
+  document.getElementById('scannerOverlay').style.display  = 'none';
+  document.getElementById('btnStart').style.display        = 'none';
+  document.getElementById('btnStop').style.display         = 'inline-flex';
+  document.getElementById('scannerStatus').innerHTML =
+    '<span class="status-dot active"></span> Scanning...';
 
   html5QrcodeScanner = new Html5Qrcode("qr-reader");
 
   Html5Qrcode.getCameras().then(cameras => {
     if (!cameras || cameras.length === 0) {
       alert('Tidak ada kamera yang terdeteksi.');
-      stopScanner();
-      return;
+      stopScanner(); return;
     }
-    // Prefer back camera on mobile
-    const cam = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[cameras.length - 1];
+    const cam = cameras.find(c => c.label.toLowerCase().includes('back'))
+                || cameras[cameras.length - 1];
 
     html5QrcodeScanner.start(
       cam.id,
       { fps: 10, qrbox: { width: 250, height: 250 } },
       (decodedText) => onScanSuccess(decodedText),
       () => {}
-    ).catch(err => {
-      console.error('Scanner error:', err);
-      stopScanner();
-    });
+    ).catch(err => { console.error(err); stopScanner(); });
     isScanning = true;
   }).catch(err => {
     alert('Tidak dapat mengakses kamera: ' + err);
@@ -130,59 +152,108 @@ function startScanner() {
 // ── Stop Scanner ─────────────────────────────────────────
 function stopScanner() {
   if (html5QrcodeScanner && isScanning) {
-    html5QrcodeScanner.stop().then(() => {
-      html5QrcodeScanner.clear();
-    }).catch(() => {});
+    html5QrcodeScanner.stop()
+      .then(() => html5QrcodeScanner.clear())
+      .catch(() => {});
     isScanning = false;
   }
-  document.getElementById('btnStart').style.display = 'inline-flex';
-  document.getElementById('btnStop').style.display = 'none';
-  document.getElementById('scannerStatus').innerHTML = '<span class="status-dot"></span> Siap';
+  document.getElementById('btnStart').style.display   = 'inline-flex';
+  document.getElementById('btnStop').style.display    = 'none';
+  document.getElementById('scannerStatus').innerHTML  =
+    '<span class="status-dot"></span> Siap';
   document.getElementById('scannerOverlay').style.display = 'flex';
+}
+
+// ── Ekstrak kode & tipe dari teks QR ─────────────────────
+// QR bisa berisi:
+//   URL inventaris tetap : http://192.168.x.x:5000/barang/detail/KOM-2024-0001
+//   URL habis pakai      : http://192.168.x.x:5000/consumable/detail/CSM-KBL-2024-0001
+//   Kode langsung        : KOM-2024-0001 atau CSM-KBL-2024-0001
+function parseQR(rawText) {
+  const text = rawText.trim();
+
+  // Cek pola URL consumable
+  const consumableMatch = text.match(/\/consumable\/detail\/([A-Z0-9\-]+)/i);
+  if (consumableMatch) {
+    return { kode: consumableMatch[1].toUpperCase(), tipe: 'consumable' };
+  }
+
+  // Cek pola URL inventaris tetap
+  const barangMatch = text.match(/\/barang\/detail\/([A-Z0-9\-]+)/i);
+  if (barangMatch) {
+    return { kode: barangMatch[1].toUpperCase(), tipe: 'barang' };
+  }
+
+  // Tidak ada URL — coba sebagai kode langsung
+  const kode = text.toUpperCase();
+  if (kode.startsWith('CSM-')) {
+    return { kode, tipe: 'consumable' };
+  }
+  // Default: coba sebagai inventaris tetap
+  return { kode, tipe: 'barang' };
 }
 
 // ── Saat QR berhasil di-scan ─────────────────────────────
 function onScanSuccess(decodedText) {
   if (decodedText === lastScanned) return;
   lastScanned = decodedText;
-
   stopScanner();
-
-  // Ekstrak kode barang dari URL atau langsung sebagai kode
-  let kode = decodedText;
-  const urlMatch = decodedText.match(/\/barang\/detail\/([A-Z0-9\-]+)/);
-  if (urlMatch) kode = urlMatch[1];
-
-  fetchBarang(kode);
+  const { kode, tipe } = parseQR(decodedText);
+  fetchBarang(kode, tipe);
 }
 
 // ── Input Manual ─────────────────────────────────────────
 function searchManual() {
-  const kode = document.getElementById('manualKode').value.trim().toUpperCase();
-  if (!kode) return;
-  fetchBarang(kode);
+  const raw = document.getElementById('manualKode').value.trim();
+  if (!raw) return;
+  const { kode, tipe } = parseQR(raw);
+  fetchBarang(kode, tipe);
 }
 
-// ── Fetch Data Barang via API ─────────────────────────────
-function fetchBarang(kode) {
-  fetch(`/api/barang/${kode}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.status === 'found') {
-        showResult(data.data);
-      } else {
-        showNotFound(kode);
+// ── Fetch dengan fallback otomatis ───────────────────────
+// Jika tipe='barang' tapi tidak ditemukan → coba consumable
+// Jika tipe='consumable' tapi tidak ditemukan → coba barang
+async function fetchBarang(kode, tipe) {
+  showLoading(true);
+
+  // Tentukan urutan API yang dicoba
+  const order = tipe === 'consumable'
+    ? [{ url: `/api/consumable/${kode}`, tipe: 'consumable' },
+       { url: `/api/barang/${kode}`,     tipe: 'barang'     }]
+    : [{ url: `/api/barang/${kode}`,     tipe: 'barang'     },
+       { url: `/api/consumable/${kode}`, tipe: 'consumable' }];
+
+  for (const attempt of order) {
+    try {
+      const res  = await fetch(attempt.url);
+      const json = await res.json();
+      if (json.status === 'found') {
+        showLoading(false);
+        if (attempt.tipe === 'consumable') {
+          showResultConsumable(json.data);
+        } else {
+          showResultBarang(json.data);
+        }
+        return;
       }
-    })
-    .catch(() => showNotFound(kode));
+    } catch (e) { /* lanjut ke attempt berikutnya */ }
+  }
+
+  showLoading(false);
+  showNotFound(kode);
 }
 
-// ── Tampilkan Hasil ──────────────────────────────────────
-function showResult(b) {
+function showLoading(show) {
+  document.getElementById('loadingCard').style.display         = show ? 'block' : 'none';
+  document.getElementById('resultCard').style.display          = 'none';
+  document.getElementById('resultCardConsumable').style.display= 'none';
+  document.getElementById('notFoundCard').style.display        = 'none';
+}
+
+// ── Tampilkan Hasil — Inventaris Tetap ───────────────────
+function showResultBarang(b) {
   const kondisiClass = {
-    'Baik': 'kondisi-baik',
-    'Rusak Ringan': 'kondisi-ringan',
-    'Rusak Berat': 'kondisi-berat'
+    'Baik': 'kondisi-baik', 'Rusak Ringan': 'kondisi-ringan', 'Rusak Berat': 'kondisi-berat'
   }[b.kondisi] || 'kondisi-baik';
 
   document.getElementById('resultContent').innerHTML = `
@@ -190,8 +261,7 @@ function showResult(b) {
       <div class="result-qr">
         ${b.qr_path
           ? `<img src="/static/${b.qr_path}" alt="QR" class="result-qr-img"/>`
-          : '<div class="no-qr"><i class="bi bi-qr-code"></i></div>'
-        }
+          : '<div class="no-qr"><i class="bi bi-qr-code"></i></div>'}
       </div>
       <div class="result-info">
         <h5 class="result-name">${b.nama_barang}</h5>
@@ -201,39 +271,113 @@ function showResult(b) {
           <span class="badge badge-kategori">${b.kategori}</span>
         </div>
         <div class="result-details mt-3">
-          ${b.merk ? `<div class="result-detail-item"><i class="bi bi-building"></i><span>${b.merk}</span></div>` : ''}
+          ${b.tipe ? `<div class="result-detail-item"><i class="bi bi-cpu"></i><span>${b.tipe}</span></div>` : ''}
           <div class="result-detail-item">
-            <i class="bi bi-123"></i>
-            <span>${b.jumlah} unit</span>
+            <i class="bi bi-123"></i><span>${b.jumlah} unit</span>
           </div>
-          ${b.tanggal_pengadaan ? `<div class="result-detail-item"><i class="bi bi-calendar"></i><span>${b.tanggal_pengadaan}</span></div>` : ''}
-          ${b.spesifikasi ? `<div class="result-detail-item full"><i class="bi bi-cpu"></i><span>${b.spesifikasi}</span></div>` : ''}
+          ${b.jenis_aset ? `<div class="result-detail-item"><i class="bi bi-building"></i><span>${b.jenis_aset}</span></div>` : ''}
         </div>
-        <a href="/barang/detail/${b.kode_barang}" target="_blank" class="btn-primary-custom mt-3" style="display:inline-flex;">
-          <i class="bi bi-box-arrow-up-right me-1"></i> Lihat Halaman Detail
-        </a>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a href="/barang/detail/${b.kode_barang}" target="_blank"
+             class="btn-primary-custom" style="display:inline-flex;">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Lihat Detail
+          </a>
+          ${b.kondisi === 'Baik'
+            ? `<a href="/peminjaman/tambah?barang_id=${b.id}" class="btn-outline-custom" style="display:inline-flex;">
+                 <i class="bi bi-arrow-left-right me-1"></i>Pinjam
+               </a>`
+            : ''}
+        </div>
       </div>
-    </div>
-  `;
+    </div>`;
+
   document.getElementById('resultCard').style.display = 'block';
-  document.getElementById('notFoundCard').style.display = 'none';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ── Tampilkan Hasil — Barang Habis Pakai ─────────────────
+function showResultConsumable(b) {
+  let stokStatus, stokClass;
+  if (b.stok_sekarang === 0) {
+    stokStatus = 'Stok Habis'; stokClass = 'kondisi-berat';
+  } else if (b.stok_sekarang <= b.stok_minimum) {
+    stokStatus = 'Stok Rendah'; stokClass = 'kondisi-ringan';
+  } else {
+    stokStatus = 'Stok Aman'; stokClass = 'kondisi-baik';
+  }
+
+  document.getElementById('resultContentConsumable').innerHTML = `
+    <div class="result-grid">
+      <div class="result-qr">
+        ${b.qr_path
+          ? `<img src="/static/${b.qr_path}" alt="QR" class="result-qr-img"/>`
+          : '<div class="no-qr"><i class="bi bi-box-seam"></i></div>'}
+      </div>
+      <div class="result-info">
+        <!-- Badge habis pakai -->
+        <div class="mb-2">
+          <span style="background:#d1fae5;color:#065f46;font-size:.7rem;font-weight:700;
+                       padding:3px 10px;border-radius:20px;">
+            <i class="bi bi-box-seam me-1"></i>Barang Habis Pakai
+          </span>
+        </div>
+
+        <h5 class="result-name">${b.nama_barang}</h5>
+        <code class="result-kode">${b.kode_barang}</code>
+
+        <div class="result-badges mt-2">
+          <span class="badge-kondisi ${stokClass}">${stokStatus}</span>
+          <span class="badge badge-kategori">${b.kategori}</span>
+        </div>
+
+        <!-- Stok besar -->
+        <div class="mt-3 p-3 rounded" style="background:#f0fdf4;border:1.5px solid #a7f3d0;">
+          <div style="font-size:2rem;font-weight:800;color:${b.stok_sekarang===0?'#dc2626':b.stok_sekarang<=b.stok_minimum?'#d97706':'#059669'};">
+            ${b.stok_sekarang}
+          </div>
+          <div style="font-size:.82rem;color:#6b7280;">
+            ${b.satuan} tersedia · Min: ${b.stok_minimum} ${b.satuan}
+          </div>
+          ${b.lokasi_simpan
+            ? `<div style="font-size:.78rem;color:#6b7280;margin-top:4px;">
+                 <i class="bi bi-geo-alt me-1"></i>${b.lokasi_simpan}
+               </div>`
+            : ''}
+        </div>
+
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a href="/consumable/detail/${b.kode_barang}" target="_blank"
+             class="btn-primary-custom"
+             style="display:inline-flex;background:linear-gradient(135deg,#059669,#065f46);">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Lihat Detail
+          </a>
+          <a href="/consumable/transaksi/${b.id}"
+             class="btn-outline-custom"
+             style="display:inline-flex;color:#059669;border-color:#059669;">
+            <i class="bi bi-arrow-repeat me-1"></i>Kelola Stok
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('resultCardConsumable').style.display = 'block';
+  document.getElementById('resultCardConsumable').scrollIntoView({ behavior: 'smooth' });
+}
+
 function showNotFound(kode) {
-  document.getElementById('notFoundMessage').textContent = `Kode "${kode}" tidak ditemukan dalam database.`;
+  document.getElementById('notFoundMessage').textContent =
+    `Kode "${kode}" tidak ditemukan di inventaris tetap maupun barang habis pakai.`;
   document.getElementById('notFoundCard').style.display = 'block';
-  document.getElementById('resultCard').style.display = 'none';
 }
 
 function resetResult() {
   lastScanned = '';
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('notFoundCard').style.display = 'none';
+  ['resultCard','resultCardConsumable','notFoundCard','loadingCard'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
   document.getElementById('manualKode').value = '';
 }
 
-// Enter key on manual input
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('manualKode').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchManual();

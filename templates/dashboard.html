@@ -50,6 +50,55 @@
   </div>
 </div>
 
+<!-- ── CONSUMABLE STATS ─────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-box-seam-fill me-2"></i>Ringkasan Barang Habis Pakai
+        </h6>
+        <a href="{{ url_for('consumable_list') }}" class="btn-panel-link">Kelola Stok</a>
+      </div>
+      <div class="panel-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="csm-stat-card csm-total">
+              <div class="csm-icon"><i class="bi bi-box-seam-fill"></i></div>
+              <div class="csm-info">
+                <div class="csm-value">{{ stats.csm_total }}</div>
+                <div class="csm-label">Total Jenis Item</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('consumable_list') }}?stok=rendah" class="text-decoration-none">
+              <div class="csm-stat-card csm-rendah">
+                <div class="csm-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div class="csm-info">
+                  <div class="csm-value">{{ stats.csm_rendah }}</div>
+                  <div class="csm-label">Stok Rendah — Perlu Restock</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('consumable_list') }}?stok=rendah" class="text-decoration-none">
+              <div class="csm-stat-card csm-habis">
+                <div class="csm-icon"><i class="bi bi-x-circle-fill"></i></div>
+                <div class="csm-info">
+                  <div class="csm-value">{{ stats.csm_habis }}</div>
+                  <div class="csm-label">Stok Habis — Segera Restock</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Charts -->
 <div class="row g-4 mb-4">
   <div class="col-lg-5">

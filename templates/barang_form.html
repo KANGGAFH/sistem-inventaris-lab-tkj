@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{% if mode=='tambah' %}Tambah{% else %}Edit{% endif %} Barang{% endblock %}
-{% block page_title %}{% if mode=='tambah' %}Tambah Barang{% else %}Edit Barang{% endif %}{% endblock %}
+{% block page_title %}{% if mode=='tambah' %}Tambah Barang Inventaris{% else %}Edit Barang Inventaris{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -9,11 +9,23 @@
       <div class="panel-header">
         <h6 class="panel-title">
           <i class="bi bi-{% if mode=='tambah' %}plus-circle{% else %}pencil{% endif %}-fill me-2"></i>
-          {% if mode=='tambah' %}Form Tambah Barang Baru{% else %}Form Edit Barang{% endif %}
+          {% if mode=='tambah' %}Form Tambah Barang Inventaris Tetap{% else %}Form Edit Barang Inventaris{% endif %}
         </h6>
-        <a href="{{ url_for('barang_list') }}" class="btn-outline-custom"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+        <a href="{{ url_for('barang_list') }}" class="btn-outline-custom">
+          <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
       </div>
       <div class="panel-body">
+
+        {% if mode=='tambah' %}
+        <div class="info-box mb-4">
+          <i class="bi bi-info-circle me-2"></i>
+          Halaman ini untuk barang <strong>inventaris tetap</strong> seperti PC, Monitor, Switch, dll.
+          Untuk barang habis pakai (kabel, RJ45, ATK) gunakan menu
+          <a href="{{ url_for('consumable_list') }}" class="fw-700">Habis Pakai</a>.
+        </div>
+        {% endif %}
+
         <form method="POST" id="barangForm">
 
           <!-- Nama & Kategori -->
@@ -21,33 +33,43 @@
             <div class="col-md-7">
               <label class="form-label-custom required">Nama Barang</label>
               <input type="text" name="nama_barang" class="form-control form-control-custom"
-                     placeholder="Contoh: PC Desktop Core i5"
-                     value="{{ barang.nama_barang if barang else '' }}" required/>
+                     placeholder="Contoh: PC Desktop, Monitor LG, Switch TP-Link"
+                     value="{{ barang.nama_barang if barang else '' }}" required
+                     autocomplete="off"/>
             </div>
             <div class="col-md-5">
               <label class="form-label-custom required">Kategori</label>
-              <select name="kategori" id="selectKategori" class="form-select form-control-custom" required>
+              <select name="kategori" id="selectKategori" class="form-select form-control-custom"
+                      required onchange="updateKodePreview()">
                 {% for k in kategori_list %}
-                <option value="{{ k }}" {% if barang and barang.kategori==k %}selected{% elif not barang and k=='Komputer' %}selected{% endif %}>{{ k }}</option>
+                <option value="{{ k }}"
+                  {% if barang and barang.kategori==k %}selected
+                  {% elif not barang and k=='Komputer' %}selected{% endif %}>
+                  {{ k }}
+                </option>
                 {% endfor %}
               </select>
             </div>
           </div>
 
-          <!-- Tipe Produk & Jenis Aset -->
+          <!-- Tipe Produk (MANUAL — tidak dropdown) -->
           <div class="row g-3 mb-3">
             <div class="col-md-5">
-              <label class="form-label-custom required">Tipe Produk</label>
-              <select name="tipe" id="selectTipe" class="form-select form-control-custom" required>
-                {% if barang and barang.tipe %}
-                  <option value="{{ barang.tipe }}" selected>{{ barang.tipe }}</option>
-                {% endif %}
-              </select>
+              <label class="form-label-custom">
+                Tipe / Spesifikasi Singkat
+                <span class="text-muted small fw-400 ms-1">(opsional)</span>
+              </label>
+              <input type="text" name="tipe" id="inputTipe"
+                     class="form-control form-control-custom"
+                     placeholder="Contoh: Core i5-10400, 22 inch FHD, 24 Port"
+                     value="{{ barang.tipe if barang else '' }}"
+                     autocomplete="off"/>
               <div class="form-text text-muted small mt-1">
-                <i class="bi bi-info-circle me-1"></i>
-                Kode barang akan digenerate otomatis dari kategori + tipe
+                <i class="bi bi-pencil me-1"></i>Ketik bebas sesuai spesifikasi barang
               </div>
             </div>
+
+            <!-- Jenis Aset -->
             <div class="col-md-4">
               <label class="form-label-custom required">Jenis Aset</label>
               <div class="jenis-selector mt-1">
@@ -61,6 +83,8 @@
                 {% endfor %}
               </div>
             </div>
+
+            <!-- Jumlah -->
             <div class="col-md-3">
               <label class="form-label-custom">Jumlah Unit</label>
               <input type="number" name="jumlah" class="form-control form-control-custom"
@@ -68,14 +92,26 @@
             </div>
           </div>
 
-          <!-- Preview Kode -->
+          <!-- Preview Kode Barang -->
+          {% if mode == 'tambah' %}
           <div class="mb-3">
             <div class="kode-preview" id="kodePreview">
               <i class="bi bi-tag-fill me-2 text-primary"></i>
-              Kode barang: <strong id="previewText">—</strong>
-              <span class="text-muted small ms-2">(digenerate otomatis)</span>
+              Kode barang akan menjadi: <strong id="previewText">—</strong>
+              <span class="text-muted small ms-2">
+                (format: PREFIX-TAHUN-NOURUT, digenerate otomatis)
+              </span>
             </div>
           </div>
+          {% else %}
+          <div class="mb-3">
+            <div class="kode-preview">
+              <i class="bi bi-tag-fill me-2 text-primary"></i>
+              Kode barang: <strong>{{ barang.kode_barang }}</strong>
+              <span class="text-muted small ms-2">(tidak dapat diubah)</span>
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Kondisi & Tanggal -->
           <div class="row g-3 mb-3">
@@ -100,25 +136,17 @@
 
           <!-- Spesifikasi -->
           <div class="mb-3">
-            <label class="form-label-custom">Spesifikasi Teknis</label>
+            <label class="form-label-custom">Spesifikasi Teknis Lengkap</label>
             <textarea name="spesifikasi" class="form-control form-control-custom" rows="3"
-                      placeholder="Contoh: Intel Core i5-10400, RAM 8GB DDR4, SSD 256GB">{{ barang.spesifikasi if barang else '' }}</textarea>
+                      placeholder="Contoh: Intel Core i5-10400, RAM 8GB DDR4, SSD 256GB, HDD 1TB">{{ barang.spesifikasi if barang else '' }}</textarea>
           </div>
 
           <!-- Keterangan -->
           <div class="mb-4">
             <label class="form-label-custom">Keterangan Tambahan</label>
             <textarea name="keterangan" class="form-control form-control-custom" rows="2"
-                      placeholder="Catatan khusus...">{{ barang.keterangan if barang else '' }}</textarea>
+                      placeholder="Catatan khusus, kondisi tambahan, histori, dll...">{{ barang.keterangan if barang else '' }}</textarea>
           </div>
-
-          {% if mode=='tambah' %}
-          <div class="info-box mb-4">
-            <i class="bi bi-magic me-2"></i>
-            Kode barang unik dan QR Code akan digenerate otomatis saat data disimpan,
-            berdasarkan kombinasi <strong>Kategori + Tipe Produk + Tahun + Nomor Urut</strong>.
-          </div>
-          {% endif %}
 
           <div class="d-flex gap-3">
             <button type="submit" class="btn-primary-custom">
@@ -136,39 +164,27 @@
 
 {% block scripts %}
 <script>
-const TIPE_MAP = {{ tipe_per_kategori | safe }};
-const KAT_PREFIX = {
-  'Komputer':'KOM','Monitor':'MON','Jaringan':'NET',
-  'Peripheral':'PRP','Printer':'PRN','Listrik':'PWR',
-  'Scanner':'SCN','Furnitur':'FRN','Lainnya':'LNY'
+// ── Mapping prefix kategori (sama dengan KATEGORI_PREFIX di Python) ──
+const PREFIX_MAP = {
+  'Komputer'  : 'KOM', 'Monitor'   : 'MON',
+  'Jaringan'  : 'NET', 'Peripheral': 'PRP',
+  'Printer'   : 'PRN', 'Listrik'   : 'PWR',
+  'Scanner'   : 'SCN', 'Furnitur'  : 'FRN',
+  'Lainnya'   : 'LNY',
 };
 
-const selKat  = document.getElementById('selectKategori');
-const selTipe = document.getElementById('selectTipe');
-const prevTxt = document.getElementById('previewText');
-const tahun   = new Date().getFullYear();
+const tahun = new Date().getFullYear();
 
-function populateTipe(kat, currentTipe='') {
-  const tipes = TIPE_MAP[kat] || ['Lainnya'];
-  selTipe.innerHTML = tipes.map(t =>
-    `<option value="${t}" ${t===currentTipe?'selected':''}>${t}</option>`
-  ).join('');
-  updatePreview();
+function updateKodePreview() {
+  const kat    = document.getElementById('selectKategori').value;
+  const prefix = PREFIX_MAP[kat] || 'LNY';
+  document.getElementById('previewText').textContent =
+    `${prefix}-${tahun}-XXXX`;
 }
 
-function updatePreview() {
-  const kat  = selKat.value;
-  const tipe = selTipe.value;
-  const katPfx  = KAT_PREFIX[kat] || 'LNY';
-  const tipePfx = tipe.replace(/[^A-Za-z]/g,'').substring(0,3).toUpperCase() || 'XXX';
-  prevTxt.textContent = `${katPfx}-${tipePfx}-${tahun}-XXXX`;
-}
-
-selKat.addEventListener('change', () => populateTipe(selKat.value));
-selTipe.addEventListener('change', updatePreview);
-
-// Init
-const initTipe = "{{ barang.tipe if barang else '' }}";
-populateTipe(selKat.value, initTipe);
+{% if mode == 'tambah' %}
+updateKodePreview();
+document.getElementById('selectKategori').addEventListener('change', updateKodePreview);
+{% endif %}
 </script>
 {% endblock %}

@@ -1290,3 +1290,499 @@ body {
   flex-shrink: 0;
   margin-left: 2px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   v3.0 — Consumable, Stok Bar, Transaksi, Pinjam Button
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Stok Display (tabel consumable) ────────────────────── */
+.stok-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 90px;
+}
+.stok-number {
+  font-size: .95rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.stok-bar-wrap {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.stok-bar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width .4s ease;
+  min-width: 4px;
+}
+.bar-aman   { background: linear-gradient(90deg, #06d6a0, #059669); }
+.bar-rendah { background: linear-gradient(90deg, #ffd166, #d97706); }
+.bar-habis  { background: #ef233c; }
+
+/* ── Stok Big Number (halaman transaksi) ─────────────────── */
+.stok-big-number {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stok-big-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Stok Preview Box (form transaksi) ───────────────────── */
+.stok-preview-box {
+  background: #f8faff;
+  border: 1.5px solid #e0e7ff;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stok-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+.stok-preview-total {
+  border-top: 1.5px solid #e0e7ff;
+  padding-top: 8px;
+  margin-top: 2px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* ── Transaksi Selector ──────────────────────────────────── */
+.transaksi-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.transaksi-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: .875rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  transition: all .18s ease;
+  background: var(--bg);
+}
+.transaksi-option input[type=radio] { display: none; }
+
+.transaksi-option i {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.transaksi-option small {
+  display: block;
+  font-size: .72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.transaksi-option span {
+  display: block;
+  line-height: 1.2;
+}
+
+.transaksi-masuk  { color: #065f46; }
+.transaksi-masuk i { color: #059669; }
+.transaksi-masuk:has(input:checked) {
+  background: #d1fae5;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5,150,105,.1);
+}
+
+.transaksi-keluar  { color: #7f1d1d; }
+.transaksi-keluar i { color: #dc2626; }
+.transaksi-keluar:has(input:checked) {
+  background: #fee2e2;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+
+.transaksi-koreksi  { color: #1e3a8a; }
+.transaksi-koreksi i { color: #4361ee; }
+.transaksi-koreksi:has(input:checked) {
+  background: #eef1fd;
+  border-color: #4361ee;
+  box-shadow: 0 0 0 3px rgba(67,97,238,.1);
+}
+
+/* ── Badge Transaksi (riwayat) ───────────────────────────── */
+.badge-transaksi {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.trx-masuk   { background: #d1fae5; color: #065f46; }
+.trx-keluar  { background: #fee2e2; color: #991b1b; }
+.trx-koreksi { background: #e0e7ff; color: #3730a3; }
+
+/* ── Tombol Pinjam di Halaman Detail ─────────────────────── */
+.detail-pinjam-section { }
+
+.detail-pinjam-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #eef1fd, #f0fdf4);
+  border: 1.5px solid #c7d2fe;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+
+.detail-pinjam-unavail {
+  background: #fef3c7;
+  border-color: #fde68a;
+  justify-content: flex-start;
+}
+
+.detail-pinjam-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-pinjam-icon {
+  font-size: 2rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.detail-pinjam-label {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.detail-pinjam-sub {
+  font-size: .78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.btn-pinjam-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 700;
+  padding: 11px 24px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .2s ease;
+  box-shadow: 0 4px 14px rgba(67,97,238,.3);
+  flex-shrink: 0;
+}
+.btn-pinjam-detail:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(67,97,238,.4);
+}
+
+/* ── Consumable Form info box override ───────────────────── */
+.consumable_form .info-box {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 575px) {
+  .detail-pinjam-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-pinjam-detail {
+    width: 100%;
+    justify-content: center;
+  }
+  .stok-big-number { font-size: 1.8rem; }
+  .transaksi-selector { gap: 6px; }
+}
+
+/* ── Consumable Stat Cards (Dashboard) ───────────────────── */
+.csm-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  transition: transform .18s, box-shadow .18s;
+  cursor: default;
+}
+a .csm-stat-card { cursor: pointer; }
+a .csm-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.csm-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.csm-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.csm-label {
+  font-size: .78rem;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.csm-total  { background: #f0f4ff; border-color: #c7d2fe; }
+.csm-total .csm-icon  { background: #e0e7ff; color: #4361ee; }
+.csm-total .csm-value { color: #4361ee; }
+.csm-total .csm-label { color: #6366f1; }
+
+.csm-rendah { background: #fffbeb; border-color: #fde68a; }
+.csm-rendah .csm-icon  { background: #fef3c7; color: #d97706; }
+.csm-rendah .csm-value { color: #d97706; }
+.csm-rendah .csm-label { color: #b45309; }
+
+.csm-habis  { background: #fff5f5; border-color: #fecaca; }
+.csm-habis .csm-icon  { background: #fee2e2; color: #dc2626; }
+.csm-habis .csm-value { color: #dc2626; }
+.csm-habis .csm-label { color: #b91c1c; }
+
+/* ── Consumable Detail Page (QR Scan Target) ─────────────── */
+.csm-detail-stok-wrap {
+  display: flex;
+  justify-content: center;
+}
+.csm-detail-stok-card {
+  background: #f0fdf4;
+  border: 2px solid #a7f3d0;
+  border-radius: var(--radius);
+  padding: 20px 32px;
+  text-align: center;
+  min-width: 200px;
+}
+.csm-detail-stok-num {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.csm-detail-stok-satuan {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.csm-detail-bar-wrap {
+  height: 8px;
+  background: #dcfce7;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 8px auto;
+  max-width: 160px;
+}
+.csm-detail-bar {
+  height: 100%;
+  border-radius: 10px;
+  min-width: 6px;
+  transition: width .4s ease;
+}
+.csm-detail-bar-label {
+  font-size: .72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HALAMAN ABOUT / TENTANG SISTEM
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Hero Section ────────────────────────────────────────── */
+.about-hero {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+.about-hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e3a5f 100%);
+}
+.about-hero-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(67,97,238,.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(67,97,238,.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.about-hero-content {
+  position: relative; z-index: 1;
+  display: flex; align-items: center;
+  gap: 24px; padding: 32px 28px;
+  flex-wrap: wrap;
+}
+.about-hero-logo {
+  width: 80px; height: 80px;
+  object-fit: contain;
+  background: white; border-radius: 16px;
+  padding: 6px; flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.about-hero-badge {
+  display: inline-block;
+  background: rgba(67,97,238,.25);
+  border: 1px solid rgba(67,97,238,.4);
+  color: #93c5fd;
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 20px;
+  margin-bottom: 8px;
+}
+.about-hero-title {
+  font-size: 2rem; font-weight: 800;
+  color: #ffffff; line-height: 1.1;
+  margin: 0 0 6px;
+}
+.about-hero-sub {
+  font-size: .9rem; color: #94a3b8;
+  line-height: 1.5; margin: 0 0 10px;
+}
+.about-hero-school {
+  font-size: .82rem; color: #64748b;
+  font-style: italic;
+}
+.about-version-badge {
+  margin-left: auto;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: #cbd5e1;
+  font-size: .8rem; font-weight: 700;
+  padding: 6px 16px; border-radius: 8px;
+  white-space: nowrap; align-self: flex-start;
+}
+
+/* ── Fitur Cards ─────────────────────────────────────────── */
+.about-fitur-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px; border-radius: var(--radius-sm);
+  background: var(--bg); border: 1px solid var(--border);
+  transition: transform .18s, box-shadow .18s;
+}
+.about-fitur-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.about-fitur-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.about-icon-primary { background: #eef1fd; color: #4361ee; }
+.about-icon-success  { background: #d1fae5; color: #059669; }
+.about-icon-info     { background: #dbeafe; color: #2563eb; }
+.about-icon-purple   { background: #ede9fe; color: #7c3aed; }
+.about-icon-orange   { background: #fef3c7; color: #d97706; }
+.about-icon-teal     { background: #ccfbf1; color: #0d9488; }
+
+.about-fitur-nama { font-size: .875rem; font-weight: 700; color: var(--text-main); margin-bottom: 3px; }
+.about-fitur-desk { font-size: .78rem;  color: var(--text-muted); line-height: 1.5; }
+
+/* ── Developer Cards ─────────────────────────────────────── */
+.about-dev-card {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 16px 18px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg-white);
+  transition: border-color .18s, box-shadow .18s;
+  position: relative;
+}
+.about-dev-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(67,97,238,.08);
+}
+.about-dev-avatar {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #fff; flex-shrink: 0;
+}
+.about-dev-nama  { font-size: .95rem; font-weight: 800; color: var(--text-main); }
+.about-dev-nim   { font-size: .75rem; color: var(--text-muted); font-family: var(--font-mono); margin: 2px 0; }
+.about-dev-peran {
+  font-size: .78rem; font-weight: 700; color: var(--primary);
+  background: var(--primary-soft); padding: 2px 10px;
+  border-radius: 20px; display: inline-block; margin: 4px 0 6px;
+}
+.about-dev-desk  { font-size: .8rem; color: var(--text-muted); line-height: 1.55; }
+.about-dev-badge {
+  position: absolute; top: 14px; right: 14px;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 800;
+}
+
+/* ── Tech Rows ───────────────────────────────────────────── */
+.about-tech-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: .85rem;
+}
+.about-tech-row.last { border-bottom: none; }
+.about-tech-label { color: var(--text-muted); font-weight: 600; }
+.about-tech-nilai { color: var(--text-main); font-weight: 600; text-align: right; }
+
+/* ── School Info Rows ────────────────────────────────────── */
+.about-school-logo-wrap { text-align: center; margin-bottom: 16px; }
+.about-school-logo {
+  width: 70px; height: 70px; object-fit: contain;
+  border-radius: 12px; padding: 4px;
+  background: var(--bg); border: 1.5px solid var(--border);
+}
+.about-info-row {
+  display: flex; flex-direction: column;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.about-info-row:last-child { border-bottom: none; }
+.about-info-label { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.about-info-nilai { font-size: .875rem; font-weight: 600; color: var(--text-main); margin-top: 2px; }
+
+/* ── Changelog ───────────────────────────────────────────── */
+.about-changelog-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.about-changelog-item:last-child { border-bottom: none; }
+.about-changelog-badge {
+  font-size: .72rem; font-weight: 800;
+  padding: 4px 10px; border-radius: 20px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.about-badge-primary { background: #eef1fd; color: #4361ee; }
+.about-badge-success  { background: #d1fae5; color: #059669; }
+.about-changelog-thn  { font-size: .72rem; color: var(--text-muted); margin-bottom: 2px; }
+.about-changelog-desc { font-size: .8rem; color: var(--text-main); line-height: 1.4; }

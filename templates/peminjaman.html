@@ -31,9 +31,21 @@
 <div class="card-panel">
   <div class="panel-header">
     <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2"></i>Daftar Peminjaman</h6>
-    <a href="{{ url_for('peminjaman_tambah') }}" class="btn-primary-custom">
-      <i class="bi bi-plus-lg me-1"></i>Catat Peminjaman
-    </a>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('peminjaman_export_excel') }}?status={{ f_status }}&search={{ search }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#1e3a8a;border-color:#1e3a8a;" target="_blank">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      </a>
+      <a href="{{ url_for('peminjaman_export_pdf') }}?status={{ f_status }}&search={{ search }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#dc2626;border-color:#dc2626;" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      <a href="{{ url_for('peminjaman_tambah') }}" class="btn-primary-custom">
+        <i class="bi bi-plus-lg me-1"></i>Catat Peminjaman
+      </a>
+    </div>
   </div>
 
   <!-- Filter -->
@@ -88,9 +100,9 @@
               <small class="text-muted">{{ p.tipe or p.kategori }}</small>
             </td>
             <td class="text-center fw-600">{{ p.jumlah_pinjam }}</td>
-            <td>{{ p.tgl_pinjam.strftime('%d/%m/%Y') if p.tgl_pinjam else '—' }}</td>
+            <td>{{ p.tgl_pinjam.strftime('%d/%m/%Y %H:%M') if p.tgl_pinjam else '—' if p.tgl_pinjam else '—' }}</td>
             <td>
-              {{ p.tgl_kembali_rencana.strftime('%d/%m/%Y') if p.tgl_kembali_rencana else '—' }}
+              {{ p.tgl_kembali_rencana.strftime('%d/%m/%Y %H:%M') if p.tgl_kembali_rencana else '—' if p.tgl_kembali_rencana else '—' }}
               {% if p.status=='Terlambat' %}
                 <div class="text-danger small fw-600"><i class="bi bi-alarm me-1"></i>Terlambat!</div>
               {% endif %}

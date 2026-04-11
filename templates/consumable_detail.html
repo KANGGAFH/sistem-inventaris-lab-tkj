@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detail — {{ data.kode_barang }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body class="detail-body">
+
+<div class="detail-wrapper">
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
+  <div class="detail-header" style="background:linear-gradient(135deg,#064e3b,#065f46);">
+    <div class="detail-header-icon" style="background:#fff;padding:4px;">
+      <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+           alt="Logo" class="detail-header-logo"/>
+    </div>
+    <div>
+      <div style="font-size:.7rem;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;">
+        Barang Habis Pakai
+      </div>
+      <h5 class="detail-header-title">{{ data.nama_barang }}</h5>
+      <code style="font-size:.72rem;color:rgba(255,255,255,.6);">{{ data.kode_barang }}</code>
+    </div>
+    <!-- Status stok -->
+    {% if data.stok_sekarang == 0 %}
+      <span class="badge-kondisi kondisi-berat ms-auto">Stok Habis</span>
+    {% elif data.stok_sekarang <= data.stok_minimum %}
+      <span class="badge-kondisi kondisi-ringan ms-auto">Stok Rendah</span>
+    {% else %}
+      <span class="badge-kondisi kondisi-baik ms-auto">Stok Aman</span>
+    {% endif %}
+  </div>
+
+  <div class="detail-body-wrap">
+
+    <!-- ── QR CODE ─────────────────────────────────────── -->
+    {% if data.qr_path %}
+    <div class="text-center mb-4">
+      <img src="{{ url_for('static', filename=data.qr_path) }}"
+           alt="QR Code" class="detail-qr-img"/>
+      <div class="text-muted small mt-1">QR Code Barang Habis Pakai</div>
+    </div>
+    {% endif %}
+
+    <!-- ── STOK BESAR ──────────────────────────────────── -->
+    <div class="csm-detail-stok-wrap mb-4">
+      <div class="csm-detail-stok-card">
+        <div class="csm-detail-stok-num
+          {% if data.stok_sekarang == 0 %}text-danger
+          {% elif data.stok_sekarang <= data.stok_minimum %}text-warning
+          {% else %}text-success{% endif %}">
+          {{ data.stok_sekarang }}
+        </div>
+        <div class="csm-detail-stok-satuan">{{ data.satuan }} tersedia</div>
+        <!-- Progress bar -->
+        <div class="csm-detail-bar-wrap mt-2">
+          {% set persen = [(data.stok_sekarang / data.stok_minimum * 100) if data.stok_minimum > 0 else 100, 100]|min %}
+          <div class="csm-detail-bar
+            {% if data.stok_sekarang == 0 %}bar-habis
+            {% elif data.stok_sekarang <= data.stok_minimum %}bar-rendah
+            {% else %}bar-aman{% endif %}"
+            style="width:{{ persen }}%">
+          </div>
+        </div>
+        <div class="csm-detail-bar-label">Minimum: {{ data.stok_minimum }} {{ data.satuan }}</div>
+      </div>
+    </div>
+
+    <!-- ── INFO BARANG ─────────────────────────────────── -->
+    <div class="detail-info-grid mb-4">
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-tag-fill me-1"></i>Kode Barang</div>
+        <div class="detail-info-value"><code>{{ data.kode_barang }}</code></div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-grid me-1"></i>Kategori</div>
+        <div class="detail-info-value">{{ data.kategori }}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-rulers me-1"></i>Satuan</div>
+        <div class="detail-info-value">{{ data.satuan }}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-geo-alt-fill me-1"></i>Lokasi Simpan</div>
+        <div class="detail-info-value">{{ data.lokasi_simpan or '—' }}</div>
+      </div>
+      {% if data.harga_satuan and data.harga_satuan > 0 %}
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-cash me-1"></i>Harga Satuan</div>
+        <div class="detail-info-value">Rp {{ "{:,.0f}".format(data.harga_satuan) }}</div>
+      </div>
+      {% endif %}
+      {% if data.keterangan %}
+      <div class="detail-info-item full-width">
+        <div class="detail-info-label"><i class="bi bi-chat-left-text me-1"></i>Keterangan</div>
+        <div class="detail-info-value">{{ data.keterangan }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ── TOMBOL KELOLA STOK ──────────────────────────── -->
+    <div class="detail-pinjam-section mb-4">
+      <div class="detail-pinjam-box" style="background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border-color:#a7f3d0;">
+        <div class="detail-pinjam-info">
+          <i class="bi bi-arrow-repeat" style="font-size:2rem;color:#059669;flex-shrink:0;"></i>
+          <div>
+            <div class="detail-pinjam-label" style="color:#065f46;">Kelola Stok Barang Ini</div>
+            <div class="detail-pinjam-sub">Catat pemakaian, restock, atau koreksi stok</div>
+          </div>
+        </div>
+        <a href="{{ url_for('consumable_transaksi', id=data.id) }}"
+           class="btn-pinjam-detail"
+           style="background:linear-gradient(135deg,#059669,#065f46);">
+          <i class="bi bi-arrow-repeat me-2"></i>Kelola Stok
+        </a>
+      </div>
+    </div>
+
+    <!-- ── RIWAYAT 10 TERAKHIR ────────────────────────── -->
+    {% if riwayat %}
+    <div class="detail-scan-history">
+      <div class="detail-section-title">
+        <i class="bi bi-clock-history me-2"></i>Riwayat Transaksi Terakhir
+      </div>
+      {% for r in riwayat %}
+      <div class="scan-history-item">
+        <!-- Badge tipe -->
+        {% if r.tipe_transaksi == 'Masuk' %}
+          <span class="badge-transaksi trx-masuk" style="min-width:70px;justify-content:center;">↓ Masuk</span>
+        {% elif r.tipe_transaksi == 'Keluar' %}
+          <span class="badge-transaksi trx-keluar" style="min-width:70px;justify-content:center;">↑ Keluar</span>
+        {% else %}
+          <span class="badge-transaksi trx-koreksi" style="min-width:70px;justify-content:center;">⟳ Koreksi</span>
+        {% endif %}
+
+        <div style="flex:1;min-width:0;">
+          <!-- Jumlah -->
+          <span class="fw-700 {% if r.tipe_transaksi=='Masuk' %}text-success{% elif r.tipe_transaksi=='Keluar' %}text-danger{% else %}text-primary{% endif %}">
+            {% if r.tipe_transaksi=='Masuk' %}+{% elif r.tipe_transaksi=='Keluar' %}-{% endif %}{{ r.jumlah }}
+          </span>
+          <span class="text-muted small ms-1">→ sisa {{ r.stok_sesudah }}</span>
+
+          <!-- Nama pemakai & kelas jika ada -->
+          {% if r.nama_pemakai %}
+          <div class="text-muted" style="font-size:.72rem;">
+            <i class="bi bi-person me-1"></i>{{ r.nama_pemakai }}
+            {% if r.kelas %} · {{ r.kelas }}{% endif %}
+            {% if r.mata_pelajaran %} · {{ r.mata_pelajaran }}{% endif %}
+          </div>
+          {% endif %}
+          {% if r.keterangan %}
+          <div class="text-muted" style="font-size:.72rem;">{{ r.keterangan }}</div>
+          {% endif %}
+        </div>
+
+        <span class="text-muted ms-auto" style="font-size:.72rem;white-space:nowrap;">
+          {{ r.created_at.strftime('%d/%m/%Y %H:%M') if r.created_at else '' }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+      <div class="text-muted small">
+        <i class="bi bi-qr-code me-1"></i>
+        SMKN 1 Cikarang Selatan — Lab TJKT
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

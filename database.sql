@@ -1,6 +1,5 @@
 -- ============================================================
 -- DATABASE: Lab Inventory Management System v2.0
--- Sekolah : SMKN 1 Cikarang Selatan, Bekasi
 -- Lab     : Teknik Jaringan Komputer dan Telekomunikasi (TJKT)
 -- ============================================================
 
@@ -22,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB;
 
 INSERT INTO users (username, password, nama_lengkap, email, role) VALUES
-('admin','$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW','Administrator','adminsmkn1bekasi.sch.id','admin'); -- plain password adalah "secret"
+('admin','$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW','Administrator','admin@smkn1cikarang.sch.id','admin');
 
 -- ============================================================
 -- TABLE: barang
@@ -82,3 +81,64 @@ CREATE TABLE IF NOT EXISTS riwayat_scan (
     scanned_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (barang_id) REFERENCES barang(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+
+-- ============================================================
+-- TABLE: barang_habis_pakai (Consumable Items)
+-- Terpisah dari tabel barang utama karena logika berbeda:
+-- barang ini memiliki stok yang berkurang saat dipakai
+-- dan bisa di-restock kapan saja
+-- ============================================================
+CREATE TABLE IF NOT EXISTS barang_habis_pakai (
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    kode_barang        VARCHAR(30)  NOT NULL UNIQUE,  -- Format: CSM-[KAT]-[TAHUN]-[NOURUT]
+    nama_barang        VARCHAR(150) NOT NULL,
+    kategori           VARCHAR(50)  DEFAULT 'Kabel & Konektor',
+    satuan             VARCHAR(20)  DEFAULT 'pcs',    -- pcs, meter, roll, pack, box
+    stok_awal          INT          DEFAULT 0,
+    stok_sekarang      INT          DEFAULT 0,
+    stok_minimum       INT          DEFAULT 5,        -- alert jika stok di bawah ini
+    harga_satuan       DECIMAL(12,0) DEFAULT 0,
+    lokasi_simpan      VARCHAR(100),
+    qr_path            VARCHAR(255),                  -- Path file QR Code PNG
+    keterangan         TEXT,
+    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ALTER untuk database yang sudah ada:
+-- ALTER TABLE barang_habis_pakai ADD COLUMN IF NOT EXISTS qr_path VARCHAR(255) AFTER lokasi_simpan;
+
+-- ============================================================
+-- TABLE: riwayat_stok (Log setiap perubahan stok)
+-- Mencatat semua aktivitas: pemakaian, restock, koreksi
+-- ============================================================
+CREATE TABLE IF NOT EXISTS riwayat_stok (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    barang_id       INT          NOT NULL,
+    kode_barang     VARCHAR(30)  NOT NULL,
+    nama_barang     VARCHAR(150),
+    tipe_transaksi  ENUM('Masuk','Keluar','Koreksi') NOT NULL,
+    jumlah          INT          NOT NULL,
+    stok_sebelum    INT          NOT NULL,
+    stok_sesudah    INT          NOT NULL,
+    nama_pemakai    VARCHAR(100),                     -- Nama guru/siswa yang menggunakan
+    mata_pelajaran  VARCHAR(100),                     -- Mata pelajaran (opsional)
+    kelas           VARCHAR(50),                      -- Kelas (opsional)
+    keterangan      VARCHAR(255),
+    dicatat_oleh    VARCHAR(100),
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (barang_id) REFERENCES barang_habis_pakai(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ALTER untuk database yang sudah ada (jalankan jika tabel sudah terbuat sebelumnya)
+-- ALTER TABLE riwayat_stok ADD COLUMN IF NOT EXISTS nama_pemakai VARCHAR(100) AFTER stok_sesudah;
+-- ALTER TABLE riwayat_stok ADD COLUMN IF NOT EXISTS mata_pelajaran VARCHAR(100) AFTER nama_pemakai;
+-- ALTER TABLE riwayat_stok ADD COLUMN IF NOT EXISTS kelas VARCHAR(50) AFTER mata_pelajaran;
+
+-- Jika database sudah ada, jalankan ALTER ini di phpMyAdmin → SQL:
+ALTER TABLE riwayat_stok
+    ADD COLUMN IF NOT EXISTS nama_pemakai   VARCHAR(100) AFTER stok_sesudah,
+    ADD COLUMN IF NOT EXISTS mata_pelajaran VARCHAR(100) AFTER nama_pemakai,
+    ADD COLUMN IF NOT EXISTS kelas          VARCHAR(50)  AFTER mata_pelajaran;
+

@@ -136,4 +136,4 @@ qr_data = f"http://192.168.1.5:5000/barang/detail/{kode_barang}"
 
 ---
 
-*© 2024 SIM Lab Komputer — Proyek Kerja Praktek*
+*© 2026 SIM Lab Komputer — Proyek Kerja Praktek*

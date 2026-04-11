@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Barang Habis Pakai{% endblock %}
+{% block page_title %}Manajemen Barang Habis Pakai{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-box-seam-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total Jenis</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-box-seam-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="stat-card stat-rusak-ringan">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.rendah }}</div><div class="stat-label">Stok Rendah</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="stat-card stat-rusak-berat">
+      <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.habis }}</div><div class="stat-label">Stok Habis</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-x-octagon-fill"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="card-panel">
+  <div class="panel-header">
+    <h6 class="panel-title"><i class="bi bi-box-seam me-2"></i>Daftar Barang Habis Pakai</h6>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('consumable_export_excel') }}?kategori={{ f_kat }}&stok={{ f_stok }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#059669;border-color:#059669;" target="_blank">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      </a>
+      <a href="{{ url_for('consumable_export_pdf') }}?kategori={{ f_kat }}&stok={{ f_stok }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#dc2626;border-color:#dc2626;" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      <a href="{{ url_for('consumable_riwayat') }}" class="btn-outline-custom">
+        <i class="bi bi-clock-history me-1"></i>Riwayat
+      </a>
+      <a href="{{ url_for('consumable_tambah') }}" class="btn-primary-custom">
+        <i class="bi bi-plus-lg me-1"></i>Tambah Item
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="panel-toolbar">
+    <form method="GET" action="{{ url_for('consumable_list') }}" class="filter-form">
+      <div class="input-icon-wrap" style="min-width:200px;">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" name="search" class="form-control form-control-search"
+               placeholder="Cari nama atau kode..." value="{{ search }}"/>
+      </div>
+      <select name="kategori" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Kategori</option>
+        {% for k in kategori_list %}
+        <option value="{{ k }}" {% if f_kat==k %}selected{% endif %}>{{ k }}</option>
+        {% endfor %}
+      </select>
+      <select name="stok" class="form-select filter-select" onchange="this.form.submit()">
+        <option value="">Semua Stok</option>
+        <option value="rendah" {% if f_stok=='rendah' %}selected{% endif %}>⚠ Stok Rendah / Habis</option>
+      </select>
+      <button type="submit" class="btn-search">Cari</button>
+      {% if search or f_kat or f_stok %}
+      <a href="{{ url_for('consumable_list') }}" class="btn-reset">Reset</a>
+      {% endif %}
+    </form>
+    <div class="table-info ms-auto"><strong>{{ total_rows }}</strong> item</div>
+  </div>
+
+  <!-- Table -->
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-custom mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Kode</th>
+            <th>Nama Barang</th>
+            <th>Kategori</th>
+            <th>Satuan</th>
+            <th>Stok Sekarang</th>
+            <th>Stok Min</th>
+            <th>Status</th>
+            <th>QR</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set offset=(page-1)*10 %}
+          {% for b in rows %}
+          {% set persen = (b.stok_sekarang / b.stok_minimum * 100) if b.stok_minimum > 0 else 100 %}
+          <tr class="{% if b.stok_sekarang == 0 %}tr-terlambat{% endif %}">
+            <td class="text-muted">{{ offset+loop.index }}</td>
+            <td><code class="kode-text">{{ b.kode_barang }}</code></td>
+            <td>
+              <div class="fw-600">{{ b.nama_barang }}</div>
+              {% if b.lokasi_simpan %}<small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ b.lokasi_simpan }}</small>{% endif %}
+            </td>
+            <td><span class="badge badge-kategori">{{ b.kategori }}</span></td>
+            <td class="text-muted">{{ b.satuan }}</td>
+            <td>
+              <!-- Progress bar stok -->
+              <div class="stok-display">
+                <div class="stok-number {% if b.stok_sekarang == 0 %}text-danger{% elif b.stok_sekarang <= b.stok_minimum %}text-warning{% else %}text-success{% endif %}">
+                  {{ b.stok_sekarang }}
+                </div>
+                <div class="stok-bar-wrap">
+                  <div class="stok-bar {% if b.stok_sekarang == 0 %}bar-habis{% elif b.stok_sekarang <= b.stok_minimum %}bar-rendah{% else %}bar-aman{% endif %}"
+                       style="width: {{ [persen, 100]|min }}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted text-center">{{ b.stok_minimum }}</td>
+            <td>
+              {% if b.stok_sekarang == 0 %}
+                <span class="badge-kondisi kondisi-berat">Habis</span>
+              {% elif b.stok_sekarang <= b.stok_minimum %}
+                <span class="badge-kondisi kondisi-ringan">Stok Rendah</span>
+              {% else %}
+                <span class="badge-kondisi kondisi-baik">Aman</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if b.qr_path %}
+                <img src="{{ url_for('static', filename=b.qr_path) }}"
+                     alt="QR" class="qr-thumb"
+                     data-bs-toggle="modal" data-bs-target="#qrModal{{ b.id }}"
+                     style="cursor:pointer;" title="Klik untuk perbesar"/>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="action-buttons">
+                <a href="{{ url_for('consumable_transaksi', id=b.id) }}"
+                   class="btn-action btn-detail" title="Kelola Stok (Pakai/Restock)">
+                  <i class="bi bi-arrow-repeat"></i>
+                </a>
+                <a href="{{ url_for('consumable_edit', id=b.id) }}"
+                   class="btn-action btn-edit" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button class="btn-action btn-delete" title="Hapus"
+                        onclick="confirmHapus({{ b.id }}, '{{ b.nama_barang }}')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              <i class="bi bi-box-seam display-6 d-block mb-2"></i>
+              Belum ada data barang habis pakai
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="panel-footer">
+    <nav><ul class="pagination-custom">
+      <li class="{% if page==1 %}disabled{% endif %}">
+        <a href="?page={{ page-1 }}&search={{ search }}&kategori={{ f_kat }}&stok={{ f_stok }}"><i class="bi bi-chevron-left"></i></a>
+      </li>
+      {% for p in range(1, total_pages+1) %}
+      <li class="{% if p==page %}active{% endif %}">
+        <a href="?page={{ p }}&search={{ search }}&kategori={{ f_kat }}&stok={{ f_stok }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      <li class="{% if page==total_pages %}disabled{% endif %}">
+        <a href="?page={{ page+1 }}&search={{ search }}&kategori={{ f_kat }}&stok={{ f_stok }}"><i class="bi bi-chevron-right"></i></a>
+      </li>
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+
+<!-- QR MODALS -->
+{% for b in rows %}{% if b.qr_path %}
+<div class="modal fade" id="qrModal{{ b.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content qr-modal">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-700">QR Code — {{ b.kode_barang }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img src="{{ url_for('static', filename=b.qr_path) }}"
+             alt="QR" class="img-fluid mb-2" style="max-width:200px;"/>
+        <div class="text-muted small">{{ b.nama_barang }}</div>
+        <div style="margin-top:6px;">
+          {% if b.stok_sekarang == 0 %}
+            <span class="badge-kondisi kondisi-berat">Stok Habis</span>
+          {% elif b.stok_sekarang <= b.stok_minimum %}
+            <span class="badge-kondisi kondisi-ringan">Stok Rendah</span>
+          {% else %}
+            <span class="badge-kondisi kondisi-baik">Stok Aman</span>
+          {% endif %}
+          <span class="text-muted small ms-2">{{ b.stok_sekarang }} {{ b.satuan }}</span>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+        <a href="{{ url_for('static', filename=b.qr_path) }}"
+           download="qr_{{ b.kode_barang }}.png"
+           class="btn-primary-custom btn-sm-custom"
+           style="background:linear-gradient(135deg,#059669,#065f46);">
+          <i class="bi bi-download me-1"></i>Download QR
+        </a>
+        <a href="{{ url_for('cetak_label') }}?ids=csm_{{ b.id }}"
+           onclick="window.open('{{ url_for('consumable_detail', kode=b.kode_barang) }}','_blank');return false;"
+           class="btn-outline-custom btn-sm-custom">
+          <i class="bi bi-eye me-1"></i>Lihat Detail
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}{% endfor %}
+
+<!-- Hapus Modal -->
+<div class="modal fade" id="hapusModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+        <h6 class="fw-700 mt-3 mb-1">Hapus Item?</h6>
+        <p class="text-muted small mb-0" id="hapusNama"></p>
+        <p class="text-muted small">Riwayat stok juga akan terhapus.</p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center gap-2 pt-0">
+        <button class="btn-outline-custom" data-bs-dismiss="modal">Batal</button>
+        <form id="hapusForm" method="POST">
+          <button type="submit" class="btn-danger-custom">Ya, Hapus</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmHapus(id, nama) {
+  document.getElementById('hapusNama').textContent = nama;
+  document.getElementById('hapusForm').action = '/consumable/hapus/' + id;
+  new bootstrap.Modal(document.getElementById('hapusModal')).show();
+}
+</script>
+{% endblock %}

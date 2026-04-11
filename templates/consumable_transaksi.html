@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}Kelola Stok — {{ data.nama_barang }}{% endblock %}
+{% block page_title %}Kelola Stok Barang{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+
+    <!-- Info Barang -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-box-seam me-2"></i>{{ data.nama_barang }}
+        </h6>
+        <div class="d-flex align-items-center gap-3">
+          <code class="kode-text">{{ data.kode_barang }}</code>
+          {% if data.qr_path %}
+          <img src="{{ url_for('static', filename=data.qr_path) }}"
+               alt="QR" class="qr-thumb"
+               title="QR Code {{ data.kode_barang }}"/>
+          {% endif %}
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-6 col-md-3 text-center">
+            <div class="stok-big-number
+              {% if data.stok_sekarang == 0 %}text-danger
+              {% elif data.stok_sekarang <= data.stok_minimum %}text-warning
+              {% else %}text-success{% endif %}">
+              {{ data.stok_sekarang }}
+            </div>
+            <div class="stok-big-label">{{ data.satuan }} tersedia</div>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            <div class="stok-big-number text-muted">{{ data.stok_minimum }}</div>
+            <div class="stok-big-label">Stok minimum</div>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            <div class="stok-big-number text-muted" style="font-size:1.1rem;">{{ data.kategori }}</div>
+            <div class="stok-big-label">Kategori</div>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            {% if data.stok_sekarang == 0 %}
+              <span class="badge-kondisi kondisi-berat" style="font-size:.85rem;padding:7px 14px;">Stok Habis</span>
+            {% elif data.stok_sekarang <= data.stok_minimum %}
+              <span class="badge-kondisi kondisi-ringan" style="font-size:.85rem;padding:7px 14px;">Stok Rendah</span>
+            {% else %}
+              <span class="badge-kondisi kondisi-baik" style="font-size:.85rem;padding:7px 14px;">Stok Aman</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- ── FORM TRANSAKSI ─────────────────────────────────── -->
+      <div class="col-md-5">
+        <div class="card-panel">
+          <div class="panel-header">
+            <h6 class="panel-title"><i class="bi bi-arrow-repeat me-2"></i>Catat Transaksi</h6>
+          </div>
+          <div class="panel-body">
+            <form method="POST" id="formTransaksi">
+
+              <!-- Tipe Transaksi -->
+              <div class="mb-4">
+                <label class="form-label-custom required">Jenis Transaksi</label>
+                <div class="transaksi-selector">
+                  <label class="transaksi-option transaksi-keluar">
+                    <input type="radio" name="tipe_transaksi" value="Keluar" checked/>
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                    <div>
+                      <span>Pemakaian / Keluar</span>
+                      <small>Kurangi stok — untuk praktek/penggunaan</small>
+                    </div>
+                  </label>
+                  <label class="transaksi-option transaksi-masuk">
+                    <input type="radio" name="tipe_transaksi" value="Masuk"/>
+                    <i class="bi bi-arrow-down-circle-fill"></i>
+                    <div>
+                      <span>Restock / Masuk</span>
+                      <small>Tambah stok — pengadaan baru</small>
+                    </div>
+                  </label>
+                  <label class="transaksi-option transaksi-koreksi">
+                    <input type="radio" name="tipe_transaksi" value="Koreksi"/>
+                    <i class="bi bi-pencil-square"></i>
+                    <div>
+                      <span>Koreksi Stok</span>
+                      <small>Set stok ke angka yang benar</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Jumlah -->
+              <div class="mb-3">
+                <label class="form-label-custom required" id="labelJumlah">
+                  Jumlah Dipakai ({{ data.satuan }})
+                </label>
+                <input type="number" name="jumlah" id="inputJumlah"
+                       class="form-control form-control-custom"
+                       min="0" value="1" required/>
+                <div class="form-text text-muted small" id="hintJumlah">
+                  Stok akan berkurang sebesar jumlah ini
+                </div>
+              </div>
+
+              <!-- Preview Stok -->
+              <div class="stok-preview-box mb-4" id="stokPreview">
+                <div class="stok-preview-row">
+                  <span>Stok sekarang</span>
+                  <strong>{{ data.stok_sekarang }} {{ data.satuan }}</strong>
+                </div>
+                <div class="stok-preview-row">
+                  <span id="previewLabel">- Pemakaian</span>
+                  <strong id="previewJumlah" class="text-danger">-1</strong>
+                </div>
+                <div class="stok-preview-row stok-preview-total">
+                  <span>Stok setelah</span>
+                  <strong id="previewHasil" class="text-primary">
+                    {{ data.stok_sekarang - 1 }} {{ data.satuan }}
+                  </strong>
+                </div>
+              </div>
+
+              <!-- ── DATA PEMAKAI ──────────────────────── -->
+              <div class="section-divider mb-3">
+                <i class="bi bi-person me-1"></i>Data Pemakai
+                <span class="text-muted small fw-400 ms-1">(untuk pemakaian)</span>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label-custom">
+                  Nama Pemakai
+                </label>
+                <input type="text" name="nama_pemakai"
+                       class="form-control form-control-custom"
+                       placeholder="Nama guru atau siswa"
+                       autocomplete="off"/>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label-custom">
+                    Mata Pelajaran
+                    <span class="text-muted small fw-400">(opsional)</span>
+                  </label>
+                  <input type="text" name="mata_pelajaran"
+                         class="form-control form-control-custom"
+                         placeholder="Contoh: Jaringan Dasar"/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">
+                    Kelas
+                    <span class="text-muted small fw-400">(opsional)</span>
+                  </label>
+                  <input type="text" name="kelas"
+                         class="form-control form-control-custom"
+                         placeholder="Contoh: XII TJKT A"/>
+                </div>
+              </div>
+
+              <!-- Keterangan -->
+              <div class="mb-4">
+                <label class="form-label-custom">
+                  Keterangan
+                  <span class="text-muted small fw-400">(opsional)</span>
+                </label>
+                <input type="text" name="keterangan"
+                       class="form-control form-control-custom"
+                       placeholder="Contoh: Praktek krimping kabel"/>
+              </div>
+
+              <button type="submit" class="btn-primary-custom w-100">
+                <i class="bi bi-check-lg me-1"></i>Simpan Transaksi
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RIWAYAT TRANSAKSI ──────────────────────────────── -->
+      <div class="col-md-7">
+        <div class="card-panel">
+          <div class="panel-header">
+            <h6 class="panel-title">
+              <i class="bi bi-clock-history me-2"></i>Riwayat Transaksi Barang Ini
+            </h6>
+            <a href="{{ url_for('consumable_riwayat') }}" class="btn-panel-link">
+              Lihat Semua
+            </a>
+          </div>
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="table table-custom mb-0">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Tipe</th>
+                    <th>Jml</th>
+                    <th>Sesudah</th>
+                    <th>Pemakai</th>
+                    <th>Mapel / Kelas</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in riwayat %}
+                  <tr>
+                    <td>
+                      <div class="small fw-600">
+                        {{ r.created_at.strftime('%d/%m/%Y') if r.created_at else '—' }}
+                      </div>
+                      <div class="text-muted" style="font-size:.7rem;">
+                        {{ r.created_at.strftime('%H:%M') if r.created_at else '' }}
+                      </div>
+                    </td>
+                    <td>
+                      {% if r.tipe_transaksi == 'Masuk' %}
+                        <span class="badge-transaksi trx-masuk">↓ Masuk</span>
+                      {% elif r.tipe_transaksi == 'Keluar' %}
+                        <span class="badge-transaksi trx-keluar">↑ Keluar</span>
+                      {% else %}
+                        <span class="badge-transaksi trx-koreksi">⟳ Koreksi</span>
+                      {% endif %}
+                    </td>
+                    <td class="fw-700
+                      {% if r.tipe_transaksi=='Masuk' %}text-success
+                      {% elif r.tipe_transaksi=='Keluar' %}text-danger
+                      {% else %}text-primary{% endif %}">
+                      {% if r.tipe_transaksi=='Masuk' %}+{% elif r.tipe_transaksi=='Keluar' %}-{% endif %}{{ r.jumlah }}
+                    </td>
+                    <td class="fw-600 text-center">{{ r.stok_sesudah }}</td>
+                    <td class="small">{{ r.nama_pemakai or '—' }}</td>
+                    <td class="small text-muted">
+                      {% if r.mata_pelajaran %}{{ r.mata_pelajaran }}{% endif %}
+                      {% if r.kelas %}<br/><span class="fw-600">{{ r.kelas }}</span>{% endif %}
+                      {% if not r.mata_pelajaran and not r.kelas %}—{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ r.keterangan or '—' }}</td>
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                      Belum ada transaksi
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STOK_SEKARANG = {{ data.stok_sekarang }};
+const SATUAN        = "{{ data.satuan }}";
+
+const radios   = document.querySelectorAll('input[name="tipe_transaksi"]');
+const inputJml = document.getElementById('inputJumlah');
+const pemakaianFields = ['nama_pemakai','mata_pelajaran','kelas'];
+
+function updatePreview() {
+  const tipe   = document.querySelector('input[name="tipe_transaksi"]:checked').value;
+  const jumlah = parseInt(inputJml.value) || 0;
+  const pLbl   = document.getElementById('previewLabel');
+  const pJml   = document.getElementById('previewJumlah');
+  const pHsl   = document.getElementById('previewHasil');
+  const hintEl = document.getElementById('hintJumlah');
+  const lblEl  = document.getElementById('labelJumlah');
+  const sDiv   = document.querySelector('.section-divider');
+
+  let hasil, sign, color;
+  if (tipe === 'Keluar') {
+    hasil = STOK_SEKARANG - jumlah;
+    sign  = '-'; color = '#dc2626';
+    pLbl.textContent  = '- Pemakaian/Keluar';
+    hintEl.textContent = 'Stok akan berkurang sebesar jumlah ini';
+    lblEl.childNodes[0].textContent = `Jumlah Dipakai (${SATUAN})`;
+    sDiv.style.display = 'block';
+  } else if (tipe === 'Masuk') {
+    hasil = STOK_SEKARANG + jumlah;
+    sign  = '+'; color = '#059669';
+    pLbl.textContent  = '+ Restock/Masuk';
+    hintEl.textContent = 'Stok akan bertambah sebesar jumlah ini';
+    lblEl.childNodes[0].textContent = `Jumlah Masuk (${SATUAN})`;
+    sDiv.style.display = 'none';
+  } else {
+    hasil = jumlah;
+    sign  = '→'; color = '#4361ee';
+    pLbl.textContent  = '→ Koreksi menjadi';
+    hintEl.textContent = 'Stok akan diset ke angka ini langsung';
+    lblEl.childNodes[0].textContent = `Stok Baru (${SATUAN})`;
+    sDiv.style.display = 'none';
+  }
+
+  pJml.textContent = `${sign}${jumlah}`;
+  pJml.style.color = color;
+  pHsl.textContent = `${hasil} ${SATUAN}`;
+  pHsl.style.color = hasil < 0 ? '#dc2626' : '#4361ee';
+}
+
+radios.forEach(r => r.addEventListener('change', updatePreview));
+inputJml.addEventListener('input', updatePreview);
+updatePreview();
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{% if mode=='tambah' %}Tambah{% else %}Edit{% endif %} Barang Habis Pakai{% endblock %}
+{% block page_title %}{% if mode=='tambah' %}Tambah Barang Habis Pakai{% else %}Edit Barang Habis Pakai{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-box-seam-fill me-2"></i>
+          {% if mode=='tambah' %}Form Tambah Barang Habis Pakai{% else %}Form Edit Barang Habis Pakai{% endif %}
+        </h6>
+        <a href="{{ url_for('consumable_list') }}" class="btn-outline-custom">
+          <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+      </div>
+      <div class="panel-body">
+
+        {% if mode=='tambah' %}
+        <div class="info-box mb-4" style="background:#f0fdf4;border-color:#bbf7d0;">
+          <i class="bi bi-box-seam me-2" style="color:#059669;"></i>
+          <span style="color:#065f46;">
+            Halaman ini untuk <strong>barang habis pakai</strong> seperti kabel UTP, konektor RJ45, ATK, bahan praktek, dll.
+            Untuk perangkat keras (PC, monitor, switch) gunakan menu <a href="{{ url_for('barang_tambah') }}">Inventaris Tetap</a>.
+          </span>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+
+          <!-- Nama & Kategori -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-7">
+              <label class="form-label-custom required">Nama Barang</label>
+              <input type="text" name="nama_barang" class="form-control form-control-custom"
+                     placeholder="Contoh: Kabel UTP Cat6, Konektor RJ45, Kertas HVS"
+                     value="{{ data.nama_barang if data else '' }}" required autocomplete="off"/>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label-custom required">Kategori</label>
+              <select name="kategori" class="form-select form-control-custom" required>
+                {% for k in kategori_list %}
+                <option value="{{ k }}" {% if data and data.kategori==k %}selected{% endif %}>{{ k }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Satuan & Stok Minimum -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <label class="form-label-custom required">Satuan</label>
+              <select name="satuan" class="form-select form-control-custom">
+                {% for s in satuan_list %}
+                <option value="{{ s }}" {% if data and data.satuan==s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-custom required">Stok Minimum</label>
+              <input type="number" name="stok_minimum" class="form-control form-control-custom"
+                     min="0" value="{{ data.stok_minimum if data else 5 }}"
+                     title="Alert muncul jika stok di bawah angka ini"/>
+              <div class="form-text text-muted small">Alert stok rendah</div>
+            </div>
+            {% if mode == 'tambah' %}
+            <div class="col-md-3">
+              <label class="form-label-custom required">Stok Awal</label>
+              <input type="number" name="stok_awal" class="form-control form-control-custom"
+                     min="0" value="0"/>
+              <div class="form-text text-muted small">Jumlah stok saat ini</div>
+            </div>
+            {% endif %}
+            <div class="col-md-3">
+              <label class="form-label-custom">Harga Satuan (Rp)</label>
+              <input type="number" name="harga_satuan" class="form-control form-control-custom"
+                     min="0" value="{{ data.harga_satuan if data else 0 }}"
+                     placeholder="0"/>
+              <div class="form-text text-muted small">Opsional, untuk referensi</div>
+            </div>
+          </div>
+
+          <!-- Lokasi & Keterangan -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-5">
+              <label class="form-label-custom">Lokasi Penyimpanan</label>
+              <input type="text" name="lokasi_simpan" class="form-control form-control-custom"
+                     placeholder="Contoh: Lemari Lab A, Laci Operator"
+                     value="{{ data.lokasi_simpan if data else '' }}"/>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-custom">Keterangan</label>
+            <textarea name="keterangan" class="form-control form-control-custom" rows="2"
+                      placeholder="Catatan tambahan, spesifikasi, penggunaan...">{{ data.keterangan if data else '' }}</textarea>
+          </div>
+
+          {% if mode == 'tambah' %}
+          <div class="kode-preview mb-4">
+            <i class="bi bi-tag-fill me-2 text-primary"></i>
+            Kode barang: <strong>CSM-KBL-{{ now }}-XXXX</strong>
+            <span class="text-muted small ms-2">(digenerate otomatis berdasarkan kategori)</span>
+          </div>
+          {% else %}
+          <div class="kode-preview mb-4">
+            <i class="bi bi-tag-fill me-2 text-primary"></i>
+            Kode barang: <strong>{{ data.kode_barang }}</strong>
+            <span class="text-muted small ms-2">(tidak dapat diubah)</span>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn-primary-custom">
+              <i class="bi bi-check-lg me-1"></i>
+              {% if mode=='tambah' %}Simpan Item{% else %}Simpan Perubahan{% endif %}
+            </button>
+            <a href="{{ url_for('consumable_list') }}" class="btn-outline-custom">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
