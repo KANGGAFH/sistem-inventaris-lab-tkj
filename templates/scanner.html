@@ -172,6 +172,12 @@ function stopScanner() {
 function parseQR(rawText) {
   const text = rawText.trim();
 
+  // Cek pola URL unit barang (prioritas tertinggi)
+  const unitMatch = text.match(/\/unit\/detail\/([A-Z0-9\-]+)/i);
+  if (unitMatch) {
+    return { kode: unitMatch[1].toUpperCase(), tipe: 'unit' };
+  }
+
   // Cek pola URL consumable
   const consumableMatch = text.match(/\/consumable\/detail\/([A-Z0-9\-]+)/i);
   if (consumableMatch) {
@@ -184,12 +190,12 @@ function parseQR(rawText) {
     return { kode: barangMatch[1].toUpperCase(), tipe: 'barang' };
   }
 
-  // Tidak ada URL — coba sebagai kode langsung
+  // Tidak ada URL — deteksi dari pola kode langsung
   const kode = text.toUpperCase();
-  if (kode.startsWith('CSM-')) {
-    return { kode, tipe: 'consumable' };
-  }
-  // Default: coba sebagai inventaris tetap
+  if (kode.startsWith('CSM-')) return { kode, tipe: 'consumable' };
+  // Pola unit: mengandung -U diikuti angka di akhir (misal TAB-2024-0001-U07)
+  if (/\-U\d{2}$/.test(kode))   return { kode, tipe: 'unit' };
+  // Default: inventaris tetap
   return { kode, tipe: 'barang' };
 }
 
@@ -217,11 +223,17 @@ async function fetchBarang(kode, tipe) {
   showLoading(true);
 
   // Tentukan urutan API yang dicoba
-  const order = tipe === 'consumable'
-    ? [{ url: `/api/consumable/${kode}`, tipe: 'consumable' },
-       { url: `/api/barang/${kode}`,     tipe: 'barang'     }]
-    : [{ url: `/api/barang/${kode}`,     tipe: 'barang'     },
-       { url: `/api/consumable/${kode}`, tipe: 'consumable' }];
+  let order;
+  if (tipe === 'unit') {
+    order = [{ url: `/api/unit/${kode}`, tipe: 'unit' }];
+  } else if (tipe === 'consumable') {
+    order = [{ url: `/api/consumable/${kode}`, tipe: 'consumable' },
+             { url: `/api/barang/${kode}`,     tipe: 'barang'     }];
+  } else {
+    order = [{ url: `/api/barang/${kode}`,     tipe: 'barang'     },
+             { url: `/api/consumable/${kode}`, tipe: 'consumable' },
+             { url: `/api/unit/${kode}`,       tipe: 'unit'       }];
+  }
 
   for (const attempt of order) {
     try {
@@ -231,6 +243,8 @@ async function fetchBarang(kode, tipe) {
         showLoading(false);
         if (attempt.tipe === 'consumable') {
           showResultConsumable(json.data);
+        } else if (attempt.tipe === 'unit') {
+          showResultUnit(json.data);
         } else {
           showResultBarang(json.data);
         }
@@ -253,8 +267,84 @@ function showLoading(show) {
 // ── Tampilkan Hasil — Inventaris Tetap ───────────────────
 function showResultBarang(b) {
   const kondisiClass = {
-    'Baik': 'kondisi-baik', 'Rusak Ringan': 'kondisi-ringan', 'Rusak Berat': 'kondisi-berat'
+    'Baik': 'kondisi-baik',
+    'Rusak Ringan': 'kondisi-ringan',
+    'Rusak Berat': 'kondisi-berat'
   }[b.kondisi] || 'kondisi-baik';
+
+  const pinjam = b.peminjaman_aktif;
+
+  // ── Blok aksi: kembalikan / pinjam / rusak berat ─────────
+  let aksiHTML = '';
+
+  if (pinjam) {
+    // Barang sedang dipinjam → tampilkan info + tombol kembalikan
+    const isLate    = pinjam.status === 'Terlambat';
+    const badgeColor= isLate ? '#dc2626' : '#f59e0b';
+    const badgeText = isLate ? '⏰ TERLAMBAT' : '↔ SEDANG DIPINJAM';
+    const btnClass  = isLate
+      ? 'style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;box-shadow:0 4px 14px rgba(220,38,38,.35);"'
+      : 'style="background:linear-gradient(135deg,#059669,#065f46);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3);"';
+
+    aksiHTML = `
+      <div style="margin-top:12px;border:2px solid ${badgeColor}30;
+                  border-radius:10px;overflow:hidden;">
+        <div style="background:${badgeColor};color:#fff;font-size:.7rem;
+                    font-weight:800;letter-spacing:.06em;padding:5px 12px;">
+          ${badgeText}
+        </div>
+        <div style="padding:10px 12px;background:${isLate?'#fff5f5':'#fffbeb'};">
+          <div style="font-size:.85rem;font-weight:700;color:#1e293b;">
+            👤 ${pinjam.nama_peminjam}
+            ${pinjam.kelas_jabatan ? `<span style="color:#64748b;font-weight:400;"> · ${pinjam.kelas_jabatan}</span>` : ''}
+          </div>
+          <div style="font-size:.75rem;color:#64748b;margin-top:4px;">
+            📅 Dipinjam: ${pinjam.tgl_pinjam}
+          </div>
+          <div style="font-size:.75rem;color:${isLate?'#dc2626':'#64748b'};
+                      font-weight:${isLate?'700':'400'};margin-top:2px;">
+            ✅ Rencana kembali: ${pinjam.tgl_kembali_rencana}
+          </div>
+          <div style="font-size:.7rem;color:#94a3b8;margin-top:2px;">
+            # ${pinjam.kode_pinjam}
+          </div>
+        </div>
+        <a href="/peminjaman/kembalikan/${pinjam.id}"
+           ${btnClass}
+           style="display:flex;align-items:center;justify-content:center;
+                  gap:8px;padding:11px;font-size:.875rem;font-weight:700;
+                  text-decoration:none;${isLate?'animation:none;':''}"
+           ${isLate ? 'class="btn-kembalikan-urgent"' : ''}>
+          <i class="bi bi-arrow-return-left"></i>
+          Kembalikan Sekarang
+        </a>
+      </div>`;
+  } else if (b.kondisi !== 'Rusak Berat') {
+    // Barang tersedia & bisa dipinjam (Baik atau Rusak Ringan)
+    const isRusakRingan = b.kondisi === 'Rusak Ringan';
+    const barangId      = parseInt(b.id);   // pastikan integer
+    aksiHTML = `
+      <a href="/peminjaman/tambah?barang_id=${barangId}"
+         style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+                background:linear-gradient(135deg,#4361ee,#3451d1);color:#fff;
+                font-size:.875rem;font-weight:700;padding:10px 20px;
+                border-radius:10px;text-decoration:none;
+                box-shadow:0 4px 14px rgba(67,97,238,.3);">
+        <i class="bi bi-arrow-left-right"></i>Pinjam Barang Ini
+        ${isRusakRingan ? '<span style="font-size:.7rem;opacity:.8;">(Rusak Ringan)</span>' : ''}
+      </a>`;
+  } else {
+    // Rusak Berat — tidak bisa dipinjam
+    aksiHTML = `
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;
+                  padding:12px 14px;background:#fff5f5;border:1.5px solid #fecaca;
+                  border-radius:10px;">
+        <i class="bi bi-x-octagon-fill" style="color:#dc2626;font-size:1.3rem;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:#7f1d1d;">
+          Tidak dapat dipinjam — Rusak Berat
+        </span>
+      </div>`;
+  }
 
   document.getElementById('resultContent').innerHTML = `
     <div class="result-grid">
@@ -270,24 +360,20 @@ function showResultBarang(b) {
           <span class="badge-kondisi ${kondisiClass}">${b.kondisi}</span>
           <span class="badge badge-kategori">${b.kategori}</span>
         </div>
-        <div class="result-details mt-3">
+        <div class="result-details mt-2">
           ${b.tipe ? `<div class="result-detail-item"><i class="bi bi-cpu"></i><span>${b.tipe}</span></div>` : ''}
           <div class="result-detail-item">
             <i class="bi bi-123"></i><span>${b.jumlah} unit</span>
           </div>
           ${b.jenis_aset ? `<div class="result-detail-item"><i class="bi bi-building"></i><span>${b.jenis_aset}</span></div>` : ''}
         </div>
-        <div class="d-flex gap-2 mt-3 flex-wrap">
+        <div class="d-flex gap-2 mt-2 flex-wrap">
           <a href="/barang/detail/${b.kode_barang}" target="_blank"
-             class="btn-primary-custom" style="display:inline-flex;">
+             class="btn-outline-custom" style="display:inline-flex;font-size:.82rem;padding:7px 14px;">
             <i class="bi bi-box-arrow-up-right me-1"></i>Lihat Detail
           </a>
-          ${b.kondisi === 'Baik'
-            ? `<a href="/peminjaman/tambah?barang_id=${b.id}" class="btn-outline-custom" style="display:inline-flex;">
-                 <i class="bi bi-arrow-left-right me-1"></i>Pinjam
-               </a>`
-            : ''}
         </div>
+        ${aksiHTML}
       </div>
     </div>`;
 
@@ -362,6 +448,106 @@ function showResultConsumable(b) {
 
   document.getElementById('resultCardConsumable').style.display = 'block';
   document.getElementById('resultCardConsumable').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Tampilkan Hasil — Unit Barang ────────────────────────
+function showResultUnit(u) {
+  const pinjam = u.peminjaman_aktif;
+  const kondisiClass = {
+    'Baik':'kondisi-baik','Rusak Ringan':'kondisi-ringan','Rusak Berat':'kondisi-berat'
+  }[u.kondisi] || 'kondisi-baik';
+
+  let aksiHTML = '';
+  if (pinjam) {
+    const isLate    = pinjam.status === 'Terlambat';
+    const bdColor   = isLate ? '#dc2626' : '#f59e0b';
+    const bdText    = isLate ? '⏰ TERLAMBAT' : '↔ SEDANG DIPINJAM';
+    aksiHTML = `
+      <div style="margin-top:12px;border:2px solid ${bdColor}30;border-radius:10px;overflow:hidden;">
+        <div style="background:${bdColor};color:#fff;font-size:.7rem;
+                    font-weight:800;letter-spacing:.06em;padding:5px 12px;">${bdText}</div>
+        <div style="padding:10px 12px;background:${isLate?'#fff5f5':'#fffbeb'};">
+          <div style="font-size:.85rem;font-weight:700;color:#1e293b;">
+            👤 ${pinjam.nama_peminjam}
+            ${pinjam.kelas_jabatan?`<span style="color:#64748b;font-weight:400;"> · ${pinjam.kelas_jabatan}</span>`:''}
+          </div>
+          <div style="font-size:.75rem;color:#64748b;margin-top:4px;">📅 ${pinjam.tgl_pinjam}</div>
+          <div style="font-size:.75rem;color:${isLate?'#dc2626':'#64748b'};
+                      font-weight:${isLate?'700':'400'};margin-top:2px;">
+            ✅ Rencana kembali: ${pinjam.tgl_kembali_rencana}
+          </div>
+        </div>
+        <a href="/peminjaman/kembalikan/${pinjam.id}"
+           style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;
+                  background:${isLate?'linear-gradient(135deg,#dc2626,#991b1b)':'linear-gradient(135deg,#059669,#065f46)'};
+                  color:#fff;font-size:.875rem;font-weight:700;text-decoration:none;">
+          <i class="bi bi-arrow-return-left"></i>Kembalikan Sekarang
+        </a>
+      </div>`;
+  } else if (u.kondisi !== 'Rusak Berat') {
+    aksiHTML = `
+      <a href="/peminjaman/tambah?barang_id=${u.barang_id}&unit_id=${u.id}"
+         style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+                background:linear-gradient(135deg,#4361ee,#3451d1);color:#fff;
+                font-size:.875rem;font-weight:700;padding:10px 20px;
+                border-radius:10px;text-decoration:none;
+                box-shadow:0 4px 14px rgba(67,97,238,.3);">
+        <i class="bi bi-arrow-left-right"></i>Pinjam Unit Ini
+      </a>`;
+  } else {
+    aksiHTML = `
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;
+                  padding:12px;background:#fff5f5;border:1.5px solid #fecaca;border-radius:10px;">
+        <i class="bi bi-x-octagon-fill" style="color:#dc2626;font-size:1.3rem;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:#7f1d1d;">Unit ini Rusak Berat — tidak dapat dipinjam</span>
+      </div>`;
+  }
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="result-grid">
+      <div class="result-qr">
+        ${u.qr_path
+          ? `<img src="/static/${u.qr_path}" alt="QR" class="result-qr-img"/>`
+          : '<div class="no-qr"><i class="bi bi-list-ol"></i></div>'}
+      </div>
+      <div class="result-info">
+        <!-- Badge unit -->
+        <div class="mb-2">
+          <span style="background:#e0e7ff;color:#4361ee;font-size:.7rem;font-weight:700;
+                       padding:3px 10px;border-radius:20px;">
+            <i class="bi bi-list-ol me-1"></i>Unit No. ${u.nomor_unit}
+          </span>
+          ${u.label_unit ? `<span style="background:#f1f5f9;color:#64748b;font-size:.7rem;
+            font-weight:600;padding:3px 10px;border-radius:20px;margin-left:4px;">${u.label_unit}</span>` : ''}
+        </div>
+
+        <h5 class="result-name">${u.nama_barang}</h5>
+        <code class="result-kode">${u.kode_unit}</code>
+        <div style="font-size:.78rem;color:#94a3b8;margin-top:2px;">
+          Induk: <code style="font-size:.72rem;">${u.kode_induk}</code>
+        </div>
+
+        <div class="result-badges mt-2">
+          <span class="badge-kondisi ${kondisiClass}">${u.kondisi}</span>
+          <span class="badge badge-kategori">${u.kategori}</span>
+        </div>
+
+        <div class="result-details mt-2">
+          ${u.tipe ? `<div class="result-detail-item"><i class="bi bi-cpu"></i><span>${u.tipe}</span></div>` : ''}
+        </div>
+
+        <div class="d-flex gap-2 mt-2">
+          <a href="/unit/detail/${u.kode_unit}" target="_blank"
+             class="btn-outline-custom" style="display:inline-flex;font-size:.82rem;padding:7px 14px;">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Lihat Detail
+          </a>
+        </div>
+        ${aksiHTML}
+      </div>
+    </div>`;
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
 function showNotFound(kode) {

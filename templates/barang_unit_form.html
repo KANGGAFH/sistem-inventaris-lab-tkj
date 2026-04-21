@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}{% if mode=='tambah' %}Tambah{% else %}Edit{% endif %} Unit{% endblock %}
+{% block page_title %}{% if mode=='tambah' %}Tambah Unit Barang{% else %}Edit Unit Barang{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7">
+
+    <!-- Info barang induk -->
+    <div class="info-box mb-4">
+      <i class="bi bi-box-seam me-2"></i>
+      Barang Induk: <strong>{{ barang.nama_barang }}</strong>
+      <code class="ms-2">{{ barang.kode_barang }}</code>
+    </div>
+
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-list-ol me-2"></i>
+          {% if mode=='tambah' %}Tambah Unit Baru{% else %}Edit Unit No. {{ unit.nomor_unit }}{% endif %}
+        </h6>
+        <a href="{{ url_for('unit_list', barang_id=barang.id) }}" class="btn-outline-custom">
+          <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+      </div>
+      <div class="panel-body">
+
+        {% if mode == 'tambah' %}
+        <!-- TABS: Satu unit / Banyak unit sekaligus -->
+        <div class="unit-form-tabs mb-4">
+          <button type="button" class="unit-tab active" id="tabSingle"
+                  onclick="switchTab('single')">
+            <i class="bi bi-plus-circle me-1"></i>Tambah Satu Unit
+          </button>
+          <button type="button" class="unit-tab" id="tabBulk"
+                  onclick="switchTab('bulk')">
+            <i class="bi bi-stack me-1"></i>Tambah Banyak Sekaligus
+          </button>
+        </div>
+
+        <!-- Form: Satu Unit -->
+        <form method="POST" id="formSingle">
+          <input type="hidden" name="mode" value="single"/>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label-custom required">Nomor Unit</label>
+              <input type="number" name="nomor_unit" class="form-control form-control-custom"
+                     min="1" max="999" placeholder="Contoh: 7" required/>
+              <div class="form-text text-muted small">
+                Kode: <code id="previewKode">{{ barang.kode_barang }}-U??</code>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label-custom">Label / Nama Unit (opsional)</label>
+              <input type="text" name="label_unit" class="form-control form-control-custom"
+                     placeholder="Contoh: Tab Kelas A, Laptop Presenter"/>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom required">Kondisi</label>
+            <div class="kondisi-selector mt-1">
+              {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
+              <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
+                <input type="radio" name="kondisi" value="{{ k }}"
+                       {% if k=='Baik' %}checked{% endif %}/>
+                <span>{{ k }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">Keterangan</label>
+            <input type="text" name="keterangan" class="form-control form-control-custom"
+                   placeholder="Catatan kondisi, nomor seri, dll..."/>
+          </div>
+          <button type="submit" class="btn-primary-custom">
+            <i class="bi bi-check-lg me-1"></i>Simpan Unit
+          </button>
+        </form>
+
+        <!-- Form: Bulk Unit -->
+        <form method="POST" id="formBulk" style="display:none;">
+          <input type="hidden" name="mode" value="bulk"/>
+          <div class="bulk-info-box mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            Tambah banyak unit sekaligus dengan nomor berurutan.
+            Unit yang nomornya sudah ada akan dilewati otomatis.
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <label class="form-label-custom required">Dari No.</label>
+              <input type="number" name="dari" class="form-control form-control-custom"
+                     min="1" value="1" required onchange="previewBulk()"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-custom required">Sampai No.</label>
+              <input type="number" name="sampai" class="form-control form-control-custom"
+                     min="1" value="15" required onchange="previewBulk()"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">Preview</label>
+              <div class="form-control-custom" style="background:#f8faff;color:#4361ee;
+                           font-size:.82rem;font-weight:600;min-height:38px;
+                           display:flex;align-items:center;" id="bulkPreview">
+                Unit 1 s/d 15 → 15 unit
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom required">Kondisi (semua unit)</label>
+            <div class="kondisi-selector mt-1">
+              {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
+              <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
+                <input type="radio" name="kondisi" value="{{ k }}"
+                       {% if k=='Baik' %}checked{% endif %}/>
+                <span>{{ k }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">Keterangan</label>
+            <input type="text" name="keterangan" class="form-control form-control-custom"
+                   placeholder="Keterangan untuk semua unit (opsional)"/>
+          </div>
+          <button type="submit" class="btn-primary-custom">
+            <i class="bi bi-stack me-1"></i>Tambah Semua Unit
+          </button>
+        </form>
+
+        {% else %}
+        <!-- Form Edit -->
+        <form method="POST">
+          <div class="kode-preview mb-4">
+            <i class="bi bi-tag-fill me-2 text-primary"></i>
+            Kode Unit: <strong>{{ unit.kode_unit }}</strong>
+            <span class="text-muted small ms-2">· No. {{ unit.nomor_unit }}</span>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">Label / Nama Unit (opsional)</label>
+            <input type="text" name="label_unit" class="form-control form-control-custom"
+                   value="{{ unit.label_unit or '' }}"
+                   placeholder="Contoh: Tab Kelas A"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom required">Kondisi</label>
+            <div class="kondisi-selector mt-1">
+              {% for k in ['Baik','Rusak Ringan','Rusak Berat'] %}
+              <label class="kondisi-option kondisi-{{ k.lower().replace(' ','-') }}">
+                <input type="radio" name="kondisi" value="{{ k }}"
+                       {% if unit.kondisi==k %}checked{% endif %}/>
+                <span>{{ k }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">Keterangan</label>
+            <input type="text" name="keterangan" class="form-control form-control-custom"
+                   value="{{ unit.keterangan or '' }}"
+                   placeholder="Catatan kondisi, nomor seri, dll..."/>
+          </div>
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn-primary-custom">
+              <i class="bi bi-check-lg me-1"></i>Simpan Perubahan
+            </button>
+            <a href="{{ url_for('unit_list', barang_id=barang.id) }}"
+               class="btn-outline-custom">Batal</a>
+          </div>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const KODE_BARANG = "{{ barang.kode_barang }}";
+
+{% if mode == 'tambah' %}
+function switchTab(tab) {
+  const isSingle = tab === 'single';
+  document.getElementById('tabSingle').classList.toggle('active', isSingle);
+  document.getElementById('tabBulk').classList.toggle('active', !isSingle);
+  document.getElementById('formSingle').style.display = isSingle ? 'block' : 'none';
+  document.getElementById('formBulk').style.display   = isSingle ? 'none'  : 'block';
+}
+
+// Preview kode unit
+document.querySelector('input[name="nomor_unit"]')?.addEventListener('input', function() {
+  const n = parseInt(this.value) || 0;
+  const padded = String(n).padStart(2, '0');
+  document.getElementById('previewKode').textContent = `${KODE_BARANG}-U${padded}`;
+});
+
+function previewBulk() {
+  const dari   = parseInt(document.querySelector('input[name="dari"]').value) || 1;
+  const sampai = parseInt(document.querySelector('input[name="sampai"]').value) || 1;
+  const total  = Math.max(0, sampai - dari + 1);
+  document.getElementById('bulkPreview').textContent =
+    `Unit ${dari} s/d ${sampai} → ${total} unit (${KODE_BARANG}-U${String(dari).padStart(2,'0')} sampai U${String(sampai).padStart(2,'0')})`;
+}
+previewBulk();
+{% endif %}
+</script>
+{% endblock %}

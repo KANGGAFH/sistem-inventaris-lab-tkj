@@ -144,6 +144,11 @@
             <td>
               <div class="action-buttons">
                 <a href="{{ url_for('barang_detail', kode=b.kode_barang) }}" class="btn-action btn-detail" title="Detail" target="_blank"><i class="bi bi-eye"></i></a>
+                <a href="{{ url_for('unit_list', barang_id=b.id) }}"
+                   class="btn-action" title="Kelola Unit ({{ b.jumlah }} unit)"
+                   style="background:#e0e7ff;color:#4361ee;">
+                  <i class="bi bi-list-ol"></i>
+                </a>
                 <a href="{{ url_for('barang_edit', id=b.id) }}" class="btn-action btn-edit" title="Edit"><i class="bi bi-pencil"></i></a>
                 <button class="btn-action btn-delete" title="Hapus" onclick="confirmDelete({{ b.id }},'{{ b.nama_barang }}')"><i class="bi bi-trash"></i></button>
               </div>

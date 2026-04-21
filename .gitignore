@@ -1,2 +1,8 @@
-static\qr
-static\img
+static/qr/*
+!static/qr/.gitkeep
+static/img/*
+!static/img/.gitkeep
+TODO.md
+TODO_filter_waktu.md
+launcher.py
+icon_sekolah.ico

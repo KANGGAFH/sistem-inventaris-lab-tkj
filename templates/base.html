@@ -37,18 +37,18 @@
       <i class="bi bi-pc-display"></i><span>Inventaris Tetap</span>
     </a>
 
+    <!-- Peminjaman -->
+    <a href="{{ url_for('peminjaman_list') }}"
+       class="nav-item {% if 'peminjaman' in request.endpoint %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i><span>Peminjaman Inventaris Tetap</span>
+    </a>
+
     <!-- Habis Pakai (BARU) -->
     <a href="{{ url_for('consumable_list') }}"
        class="nav-item {% if 'consumable' in request.endpoint %}active{% endif %}">
       <i class="bi bi-box-seam-fill"></i>
       <span>Habis Pakai</span>
       {# Badge stok rendah #}
-    </a>
-
-    <!-- Peminjaman -->
-    <a href="{{ url_for('peminjaman_list') }}"
-       class="nav-item {% if 'peminjaman' in request.endpoint %}active{% endif %}">
-      <i class="bi bi-arrow-left-right"></i><span>Peminjaman</span>
     </a>
 
     <!-- Scanner -->
@@ -94,6 +94,21 @@
     <div class="navbar-breadcrumb">
       <span class="breadcrumb-current">{% block page_title %}Halaman{% endblock %}</span>
     </div>
+
+    <!-- Global Search -->
+    <form action="{{ url_for('global_search') }}" method="GET"
+          class="global-search-form" id="globalSearchForm" autocomplete="off">
+      <div class="global-search-wrap">
+        <i class="bi bi-search global-search-icon"></i>
+        <input type="text" name="q" id="globalSearchInput"
+               class="global-search-input"
+               placeholder="Cari barang, peminjam, kode..."
+               value="{{ request.args.get('q','') }}"
+               maxlength="100"/>
+        <kbd class="global-search-kbd">Enter</kbd>
+      </div>
+    </form>
+
     <div class="navbar-right">
       <span class="badge-date"><i class="bi bi-calendar3"></i><span id="currentDate"></span></span>
     </div>
@@ -128,6 +143,19 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+// Keyboard shortcut: tekan "/" atau Ctrl+K → fokus ke kotak pencarian
+document.addEventListener('keydown', function(e) {
+  const inp = document.getElementById('globalSearchInput');
+  if (!inp) return;
+  const tag = document.activeElement.tagName;
+  if (tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+  if (e.key==='/' || (e.ctrlKey && e.key==='k')) {
+    e.preventDefault(); inp.focus(); inp.select();
+  }
+  if (e.key==='Escape' && document.activeElement===inp) inp.blur();
+});
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

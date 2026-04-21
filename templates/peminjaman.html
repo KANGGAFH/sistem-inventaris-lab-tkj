@@ -42,6 +42,10 @@
          style="color:#dc2626;border-color:#dc2626;" target="_blank">
         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
       </a>
+      <a href="{{ url_for('barang_riwayat') }}" class="btn-outline-custom">
+        <i class="bi bi-clock-history me-1"></i>Riwayat
+      </a>
+
       <a href="{{ url_for('peminjaman_tambah') }}" class="btn-primary-custom">
         <i class="bi bi-plus-lg me-1"></i>Catat Peminjaman
       </a>
@@ -56,14 +60,16 @@
         <input type="text" name="search" class="form-control form-control-search"
                placeholder="Cari nama, kode..." value="{{ search }}"/>
       </div>
-      <select name="status" class="form-select filter-select" onchange="this.form.submit()">
+      <select name="status" class="form-select filter-select">
         <option value="">Semua Status</option>
         <option value="Dipinjam"     {% if f_status=='Dipinjam' %}selected{% endif %}>Dipinjam</option>
         <option value="Dikembalikan" {% if f_status=='Dikembalikan' %}selected{% endif %}>Dikembalikan</option>
         <option value="Terlambat"    {% if f_status=='Terlambat' %}selected{% endif %}>Terlambat</option>
       </select>
+
+
       <button type="submit" class="btn-search">Cari</button>
-      {% if search or f_status %}<a href="{{ url_for('peminjaman_list') }}" class="btn-reset">Reset</a>{% endif %}
+      {% if search or f_status or f_periode %}<a href="{{ url_for('peminjaman_list') }}" class="btn-reset">Reset</a>{% endif %}
     </form>
     <div class="table-info ms-auto"><strong>{{ total_rows }}</strong> data</div>
   </div>
@@ -138,12 +144,12 @@
 
   {% if total_pages > 1 %}
   <div class="panel-footer">
-    <nav><ul class="pagination-custom">
-      <li class="{% if page==1 %}disabled{% endif %}"><a href="?page={{ page-1 }}&search={{ search }}&status={{ f_status }}"><i class="bi bi-chevron-left"></i></a></li>
+<nav><ul class="pagination-custom">      
+      <li class="{% if page==1 %}disabled{% endif %}"><a href="?page={{ page-1 }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}"><i class="bi bi-chevron-left"></i></a></li>
       {% for p in range(1,total_pages+1) %}
-      <li class="{% if p==page %}active{% endif %}"><a href="?page={{ p }}&search={{ search }}&status={{ f_status }}">{{ p }}</a></li>
+      <li class="{% if p==page %}active{% endif %}"><a href="?page={{ p }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}">{{ p }}</a></li>
       {% endfor %}
-      <li class="{% if page==total_pages %}disabled{% endif %}"><a href="?page={{ page+1 }}&search={{ search }}&status={{ f_status }}"><i class="bi bi-chevron-right"></i></a></li>
+      <li class="{% if page==total_pages %}disabled{% endif %}"><a href="?page={{ page+1 }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}"><i class="bi bi-chevron-right"></i></a></li>
     </ul></nav>
   </div>
   {% endif %}

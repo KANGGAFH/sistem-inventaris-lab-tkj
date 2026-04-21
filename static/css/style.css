@@ -1786,3 +1786,648 @@ a .csm-stat-card:hover {
 .about-badge-success  { background: #d1fae5; color: #059669; }
 .about-changelog-thn  { font-size: .72rem; color: var(--text-muted); margin-bottom: 2px; }
 .about-changelog-desc { font-size: .8rem; color: var(--text-main); line-height: 1.4; }
+
+/* ── About Page — Universitas & Tambahan ─────────────────── */
+.about-desc {
+  color: #475569;
+  line-height: 1.8;
+  font-size: .9rem;
+  margin-bottom: 12px;
+}
+
+/* Logo universitas di halaman about */
+.about-univ-logo-wrap {
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 16px;
+  background: #ffffff;          /* biru gelap sesuai warna logo */
+  border-radius: var(--radius-sm);
+}
+.about-univ-logo {
+  max-width: 140px;
+  max-height: 110px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+.about-univ-name {
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 3px;
+}
+.about-univ-sub {
+  font-size: .78rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* Logo universitas kecil di header tim */
+.about-univ-logo-sm {
+  height: 28px;
+  object-fit: contain;
+  background: #1e3a5f;
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+
+/* Dosen pembimbing */
+.about-pembimbing-wrap {
+  border-top: 1.5px solid var(--border);
+  padding-top: 16px;
+}
+.about-pembimbing-label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.about-pembimbing-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+}
+.about-pembimbing-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4361ee, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.about-pembimbing-nama {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.about-pembimbing-info {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── Nav sub-item (sedikit indent, ukuran lebih kecil) ───── */
+.nav-item-sub {
+  padding-left: 28px !important;
+  font-size: .82rem !important;
+}
+.nav-item-sub i {
+  font-size: .95rem !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PENCARIAN GLOBAL
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Search bar di navbar ────────────────────────────────── */
+.global-search-form {
+  flex: 1;
+  max-width: 380px;
+  margin: 0 16px;
+}
+.global-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.global-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  font-size: .9rem;
+  pointer-events: none;
+  z-index: 1;
+}
+.global-search-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 72px 0 36px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: .85rem;
+  color: var(--text-main);
+  font-family: var(--font-main);
+  transition: all .18s ease;
+  outline: none;
+}
+.global-search-input::placeholder { color: #94a3b8; }
+.global-search-input:focus {
+  background: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67,97,238,.1);
+}
+.global-search-kbd {
+  position: absolute;
+  right: 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: .03em;
+  pointer-events: none;
+}
+.global-search-input:focus + .global-search-kbd {
+  opacity: 0;
+}
+
+/* ── Header hasil pencarian ──────────────────────────────── */
+.search-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 20px;
+  background: white;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+}
+.search-result-query {
+  font-size: .95rem;
+  color: var(--text-main);
+}
+.search-result-meta {
+  font-size: .875rem;
+}
+
+/* ── Item hasil ──────────────────────────────────────────── */
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: #f8faff; }
+
+.search-result-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.search-icon-inventaris { background: #eef1fd; color: #4361ee; }
+.search-icon-consumable { background: #d1fae5; color: #059669; }
+.search-icon-pinjam     { background: #dbeafe; color: #2563eb; }
+.search-icon-stok       { background: #fef3c7; color: #d97706; }
+.search-icon-primary    { background: #eef1fd; color: #4361ee; }
+.search-icon-success    { background: #d1fae5; color: #059669; }
+.search-icon-info       { background: #dbeafe; color: #2563eb; }
+.search-icon-warning    { background: #fef3c7; color: #d97706; }
+
+.search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+.search-result-nama {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-result-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.search-dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  flex-shrink: 0;
+}
+.search-result-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.search-result-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Highlight keyword dalam hasil */
+mark.search-highlight {
+  background: #fef08a;
+  color: #713f12;
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 700;
+}
+
+/* ── Badge hitungan per seksi ────────────────────────────── */
+.search-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 20px;
+  font-size: .7rem;
+  font-weight: 800;
+  background: #eef1fd;
+  color: #4361ee;
+  margin-left: 6px;
+}
+.search-count-green  { background: #d1fae5; color: #059669; }
+.search-count-blue   { background: #dbeafe; color: #2563eb; }
+.search-count-orange { background: #fef3c7; color: #d97706; }
+
+/* ── Ringkasan di kolom kanan ────────────────────────────── */
+.search-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  margin-bottom: 4px;
+  transition: background .15s;
+  border: 1px solid transparent;
+}
+.search-summary-row:hover {
+  background: #f8faff;
+  border-color: #e0e7ff;
+}
+.search-summary-empty { opacity: .45; }
+.search-summary-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; flex-shrink: 0;
+}
+.search-summary-label {
+  flex: 1;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.search-summary-count {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.search-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .global-search-form { max-width: 180px; margin: 0 8px; }
+  .global-search-input { font-size: .78rem; }
+  .global-search-kbd { display: none; }
+}
+@media (max-width: 480px) {
+  .global-search-form { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FILTER PERIODE (Hari Ini / 7 Hari / 1 Bulan / 1 Tahun)
+   ══════════════════════════════════════════════════════════ */
+
+.period-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  background: #fafbff;
+}
+
+.period-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: #fff;
+  border: 1.5px solid var(--border);
+  text-decoration: none;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.period-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eef1fd;
+}
+.period-btn-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(67,97,238,.25);
+}
+.period-btn-active:hover {
+  background: var(--primary-dark, #3451d1);
+  color: #fff;
+}
+
+.period-active-label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: #eef1fd;
+  border: 1px solid #c7d2fe;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-left: 4px;
+}
+
+/* Mini stat pills di toolbar riwayat stok */
+.period-stat {
+  font-size: .75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.trx-masuk-sm   { background: #d1fae5; color: #065f46; }
+.trx-keluar-sm  { background: #fee2e2; color: #991b1b; }
+.trx-koreksi-sm { background: #e0e7ff; color: #3730a3; }
+
+/* ══════════════════════════════════════════════════════════
+   DETAIL PAGE — Status Dipinjam & Tombol Kembalikan
+   ══════════════════════════════════════════════════════════ */
+
+/* Alert box saat barang sedang dipinjam */
+.detail-dipinjam-alert {
+  border-radius: var(--radius);
+  border: 2px solid #fbbf24;
+  background: linear-gradient(135deg, #fffbeb, #fef9ee);
+  overflow: hidden;
+}
+
+.detail-dipinjam-badge {
+  background: #f59e0b;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  padding: 6px 16px;
+}
+
+.detail-dipinjam-info {
+  padding: 14px 16px;
+}
+
+.detail-dipinjam-row {
+  display: flex;
+  align-items: center;
+  font-size: .85rem;
+  color: var(--text-main);
+}
+
+/* Tombol kembalikan — hijau */
+.btn-kembalikan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 32px);
+  margin: 0 16px 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, #059669, #065f46);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all .2s ease;
+  box-shadow: 0 4px 14px rgba(5,150,105,.3);
+}
+.btn-kembalikan:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(5,150,105,.4);
+}
+
+/* Tombol kembalikan — merah jika terlambat */
+.btn-kembalikan-urgent {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  box-shadow: 0 4px 14px rgba(220,38,38,.3);
+  animation: pulse-red 2s infinite;
+}
+.btn-kembalikan-urgent:hover {
+  box-shadow: 0 8px 20px rgba(220,38,38,.4);
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 4px 14px rgba(220,38,38,.3); }
+  50%       { box-shadow: 0 4px 22px rgba(220,38,38,.6); }
+}
+
+/* ── Pinjam box — versi warning (Rusak Ringan) ───────────── */
+.detail-pinjam-warning {
+  background: linear-gradient(135deg, #fffbeb, #fef9ee) !important;
+  border-color: #fcd34d !important;
+}
+
+/* ── Banner Preselect QR — Form Peminjaman ───────────────── */
+.preselect-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #eef1fd, #e0e7ff);
+  border: 2px solid #818cf8;
+  border-radius: var(--radius-sm);
+  animation: preselect-in .35s ease;
+}
+@keyframes preselect-in {
+  from { opacity:0; transform:translateY(-8px); }
+  to   { opacity:1; transform:translateY(0);    }
+}
+.preselect-icon {
+  width: 38px; height: 38px;
+  background: #4361ee;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.preselect-text { flex: 1; min-width: 0; }
+.preselect-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #4361ee;
+  margin-bottom: 2px;
+}
+.preselect-nama {
+  font-size: .875rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preselect-check {
+  color: #4361ee;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   UNIT BARANG — Grid, Card, Form Tabs
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Unit grid layout ────────────────────────────────────── */
+.unit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+/* ── Unit card ────────────────────────────────────────────── */
+.unit-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: box-shadow .18s, transform .18s;
+}
+.unit-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.unit-card.unit-dipinjam {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+.unit-card.unit-rusak {
+  border-color: #fca5a5;
+  background: #fff5f5;
+  opacity: .85;
+}
+
+.unit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #f8faff;
+  border-bottom: 1px solid var(--border);
+}
+.unit-nomor {
+  font-size: .85rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.unit-qr-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  cursor: pointer;
+}
+.unit-qr-img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 6px;
+  transition: transform .18s;
+}
+.unit-qr-img:hover { transform: scale(1.05); }
+
+.unit-info {
+  padding: 0 10px 8px;
+  text-align: center;
+}
+.unit-kode {
+  font-size: .68rem;
+  color: #64748b;
+  display: block;
+}
+.unit-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 3px;
+}
+.unit-ket {
+  font-size: .72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.unit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  background: #fafbff;
+}
+
+/* ── Unit form tabs ──────────────────────────────────────── */
+.unit-form-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.unit-tab {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all .15s;
+  font-family: var(--font-main);
+}
+.unit-tab:hover { color: var(--primary); }
+.unit-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ── Bulk info box ───────────────────────────────────────── */
+.bulk-info-box {
+  padding: 10px 14px;
+  background: #eef1fd;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: .85rem;
+  color: #1e3a8a;
+  font-weight: 500;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 575px) {
+  .unit-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px; }
+  .unit-qr-img { width: 80px; height: 80px; }
+}

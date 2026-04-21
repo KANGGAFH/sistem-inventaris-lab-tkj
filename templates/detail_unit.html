@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Unit No.{{ unit.nomor_unit }} — {{ unit.nama_barang }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"/>
+</head>
+<body class="detail-body">
+<div class="detail-wrapper">
+
+  <!-- Header -->
+  <div class="detail-header" style="background:linear-gradient(135deg,#1e3a8a,#312e81);">
+    <div class="detail-header-icon" style="background:#fff;padding:4px;">
+      <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+           alt="Logo" class="detail-header-logo"/>
+    </div>
+    <div>
+      <div style="font-size:.68rem;color:rgba(255,255,255,.55);font-weight:700;
+                  letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;">
+        <i class="bi bi-list-ol me-1"></i>Unit No. {{ unit.nomor_unit }}
+        {% if unit.label_unit %} · {{ unit.label_unit }}{% endif %}
+      </div>
+      <h5 class="detail-header-title">{{ unit.nama_barang }}</h5>
+      <code style="font-size:.72rem;color:rgba(255,255,255,.55);">{{ unit.kode_unit }}</code>
+    </div>
+    {% if unit.kondisi == 'Baik' %}
+      <span class="badge-kondisi kondisi-baik ms-auto">{{ unit.kondisi }}</span>
+    {% elif unit.kondisi == 'Rusak Ringan' %}
+      <span class="badge-kondisi kondisi-ringan ms-auto">{{ unit.kondisi }}</span>
+    {% else %}
+      <span class="badge-kondisi kondisi-berat ms-auto">{{ unit.kondisi }}</span>
+    {% endif %}
+  </div>
+
+  <div class="detail-body-wrap">
+
+    <!-- QR Code -->
+    {% if unit.qr_path %}
+    <div class="text-center mb-4">
+      <img src="{{ url_for('static', filename=unit.qr_path) }}"
+           alt="QR" class="detail-qr-img"/>
+      <div class="text-muted small mt-1">QR Code Unit No. {{ unit.nomor_unit }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Info Unit -->
+    <div class="detail-info-grid mb-4">
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-tag-fill me-1"></i>Kode Unit</div>
+        <div class="detail-info-value"><code>{{ unit.kode_unit }}</code></div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-hash me-1"></i>Nomor Unit</div>
+        <div class="detail-info-value">{{ unit.nomor_unit }}</div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-box me-1"></i>Barang Induk</div>
+        <div class="detail-info-value">
+          {{ unit.nama_barang }}<br/>
+          <code style="font-size:.72rem;">{{ unit.kode_induk }}</code>
+        </div>
+      </div>
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-grid me-1"></i>Kategori</div>
+        <div class="detail-info-value">{{ unit.kategori }}</div>
+      </div>
+      {% if unit.tipe %}
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Tipe</div>
+        <div class="detail-info-value">{{ unit.tipe }}</div>
+      </div>
+      {% endif %}
+      <div class="detail-info-item">
+        <div class="detail-info-label"><i class="bi bi-circle-fill me-1"></i>Status</div>
+        <div class="detail-info-value">
+          {% if unit.status == 'Tersedia' %}
+            <span class="badge-kondisi kondisi-baik">Tersedia</span>
+          {% else %}
+            <span class="badge-kondisi kondisi-ringan">Sedang Dipinjam</span>
+          {% endif %}
+        </div>
+      </div>
+      {% if unit.keterangan %}
+      <div class="detail-info-item full-width">
+        <div class="detail-info-label"><i class="bi bi-chat-left-text me-1"></i>Keterangan</div>
+        <div class="detail-info-value">{{ unit.keterangan }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Aksi Utama -->
+    <div class="detail-pinjam-section mb-4">
+      {% if peminjaman_aktif %}
+      <div class="detail-dipinjam-alert">
+        <div class="detail-dipinjam-badge">
+          {% if peminjaman_aktif.status == 'Terlambat' %}
+            <i class="bi bi-alarm-fill me-1"></i>TERLAMBAT
+          {% else %}
+            <i class="bi bi-arrow-left-right me-1"></i>SEDANG DIPINJAM
+          {% endif %}
+        </div>
+        <div class="detail-dipinjam-info">
+          <div class="detail-dipinjam-row">
+            <i class="bi bi-person-fill me-2 text-primary"></i>
+            <strong>{{ peminjaman_aktif.nama_peminjam }}</strong>
+            {% if peminjaman_aktif.kelas_jabatan %}
+              <span class="text-muted ms-1">· {{ peminjaman_aktif.kelas_jabatan }}</span>
+            {% endif %}
+          </div>
+          <div class="detail-dipinjam-row mt-1">
+            <i class="bi bi-calendar-event me-2 text-muted"></i>
+            <span class="text-muted small">
+              Dipinjam: {{ peminjaman_aktif.tgl_pinjam.strftime('%d %b %Y, %H:%M') if peminjaman_aktif.tgl_pinjam else '—' }}
+            </span>
+          </div>
+          <div class="detail-dipinjam-row mt-1">
+            <i class="bi bi-calendar-check me-2 {% if peminjaman_aktif.status=='Terlambat' %}text-danger{% else %}text-muted{% endif %}"></i>
+            <span class="small {% if peminjaman_aktif.status=='Terlambat' %}text-danger fw-700{% else %}text-muted{% endif %}">
+              Rencana kembali: {{ peminjaman_aktif.tgl_kembali_rencana.strftime('%d %b %Y, %H:%M') if peminjaman_aktif.tgl_kembali_rencana else '—' }}
+            </span>
+          </div>
+        </div>
+        <a href="{{ url_for('peminjaman_kembalikan', id=peminjaman_aktif.id) }}"
+           class="btn-kembalikan {% if peminjaman_aktif.status=='Terlambat' %}btn-kembalikan-urgent{% endif %}">
+          <i class="bi bi-arrow-return-left me-2"></i>Kembalikan Sekarang
+        </a>
+      </div>
+      {% elif unit.kondisi != 'Rusak Berat' %}
+      <div class="detail-pinjam-box {% if unit.kondisi=='Rusak Ringan' %}detail-pinjam-warning{% endif %}">
+        <div class="detail-pinjam-info">
+          <i class="bi bi-arrow-left-right detail-pinjam-icon"></i>
+          <div>
+            <div class="detail-pinjam-label">Unit ini tersedia untuk dipinjam</div>
+            <div class="detail-pinjam-sub">
+              Unit No. {{ unit.nomor_unit }}
+              {% if unit.kondisi == 'Rusak Ringan' %}
+                · <span style="color:#d97706;font-weight:700;">⚠ Kondisi Rusak Ringan</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <a href="{{ url_for('peminjaman_tambah') }}?barang_id={{ unit.barang_id }}&unit_id={{ unit.id }}"
+           class="btn-pinjam-detail">
+          <i class="bi bi-arrow-left-right me-2"></i>Pinjam Unit Ini
+        </a>
+      </div>
+      {% else %}
+      <div class="detail-pinjam-box detail-pinjam-unavail">
+        <i class="bi bi-x-octagon-fill me-2" style="color:#b91c1c;font-size:1.2rem;"></i>
+        <span style="color:#7f1d1d;font-size:.875rem;font-weight:600;">
+          Unit tidak dapat dipinjam — kondisi Rusak Berat
+        </span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Riwayat Peminjaman Unit -->
+    {% if riwayat %}
+    <div class="detail-scan-history mt-4">
+      <div class="detail-section-title">
+        <i class="bi bi-clock-history me-2"></i>Riwayat Pemakaian Unit Ini
+      </div>
+      {% for r in riwayat %}
+      <div class="scan-history-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <div class="d-flex w-100 align-items-center">
+          <i class="bi bi-person me-2 text-primary"></i>
+          <span class="fw-600 small">{{ r.nama_peminjam }}</span>
+          {% if r.kelas_jabatan %}
+            <span class="text-muted small ms-1">· {{ r.kelas_jabatan }}</span>
+          {% endif %}
+          <span class="ms-auto">
+            {% if r.status == 'Dipinjam' %}
+              <span class="badge-kondisi kondisi-ringan" style="font-size:.65rem;">Dipinjam</span>
+            {% elif r.status == 'Dikembalikan' %}
+              <span class="badge-kondisi kondisi-baik" style="font-size:.65rem;">Dikembalikan</span>
+            {% else %}
+              <span class="badge-kondisi kondisi-berat" style="font-size:.65rem;">Terlambat</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="text-muted" style="font-size:.72rem;padding-left:22px;">
+          {{ r.tgl_pinjam.strftime('%d/%m/%Y %H:%M') if r.tgl_pinjam else '—' }}
+          {% if r.tgl_kembali_aktual %}
+            → {{ r.tgl_kembali_aktual.strftime('%d/%m/%Y %H:%M') }}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+      <div class="text-muted small">
+        <i class="bi bi-qr-code me-1"></i>SMKN 1 Cikarang Selatan — Lab TJKT
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

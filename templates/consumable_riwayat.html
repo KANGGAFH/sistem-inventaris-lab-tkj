@@ -9,12 +9,6 @@
       <i class="bi bi-clock-history me-2"></i>Riwayat Semua Transaksi Stok
     </h6>
     <div class="d-flex gap-2">
-      <!-- Export stok barang (bukan riwayat) -->
-      <a href="{{ url_for('consumable_export_excel') }}" class="btn-outline-custom btn-sm-custom"
-         style="color:#059669;border-color:#059669;" target="_blank"
-         title="Export daftar stok barang habis pakai">
-        <i class="bi bi-box-seam me-1"></i>Stok Excel
-      </a>
       <!-- Export riwayat transaksi ini -->
       <a href="{{ url_for('consumable_riwayat_export_excel') }}"
          class="btn-outline-custom btn-sm-custom"
@@ -36,16 +30,14 @@
 
   <!-- Filter & Export Toolbar -->
   <div class="panel-toolbar">
-    <form method="GET" action="{{ url_for('consumable_riwayat') }}" class="filter-form">
-      <select name="tipe" class="form-select filter-select" onchange="this.form.submit()">
+<form method="GET" action="{{ url_for('consumable_riwayat') }}" class="filter-form">
+      <select name="tipe" class="form-select filter-select">
         <option value="">Semua Tipe Transaksi</option>
         <option value="Masuk"   {% if f_tipe=='Masuk'   %}selected{% endif %}>↓ Restock / Masuk</option>
         <option value="Keluar"  {% if f_tipe=='Keluar'  %}selected{% endif %}>↑ Pemakaian / Keluar</option>
         <option value="Koreksi" {% if f_tipe=='Koreksi' %}selected{% endif %}>⟳ Koreksi Stok</option>
       </select>
-      {% if f_tipe %}
-      <a href="{{ url_for('consumable_riwayat') }}" class="btn-reset">Reset</a>
-      {% endif %}
+      <button type="submit" class="btn-search">Cari</button>
     </form>
     <div class="table-info ms-auto">{{ riwayat|length }} transaksi ditampilkan</div>
   </div>

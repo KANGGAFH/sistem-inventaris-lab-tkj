@@ -4,14 +4,17 @@
 
 {% block content %}
 
-<!-- ── HERO SECTION ──────────────────────────────────────── -->
+<!-- ── HERO ──────────────────────────────────────────────── -->
 <div class="about-hero mb-4">
   <div class="about-hero-bg"></div>
   <div class="about-hero-content">
     <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
          alt="Logo SMKN 1 Cikarang Selatan" class="about-hero-logo"/>
     <div class="about-hero-text">
-      <div class="about-hero-badge">Proyek Kerja Praktek (KP) — 2026</div>
+      <div class="about-hero-badge">
+        <i class="bi bi-mortarboard-fill me-1"></i>
+        Proyek Kerja Praktek — Semester 6 — 2026
+      </div>
       <h1 class="about-hero-title">SIM Lab TJKT</h1>
       <p class="about-hero-sub">
         Sistem Informasi Manajemen Inventaris Laboratorium<br/>
@@ -31,7 +34,7 @@
   <!-- ── KOLOM KIRI ──────────────────────────────────────── -->
   <div class="col-lg-8">
 
-    <!-- Deskripsi Sistem -->
+    <!-- Deskripsi -->
     <div class="card-panel mb-4">
       <div class="panel-header">
         <h6 class="panel-title">
@@ -39,18 +42,12 @@
         </h6>
       </div>
       <div class="panel-body">
-        <p style="color:#475569;line-height:1.8;font-size:.9rem;">
-          <strong>SIM Lab TJKT</strong> adalah sistem informasi berbasis web yang dirancang
+        <p class="about-desc">
+          <strong>SIM Lab TJKT</strong> adalah sistem informasi berbasis web lokal yang dirancang
           untuk mengelola seluruh aset dan inventaris Laboratorium Teknik Jaringan Komputer
           dan Telekomunikasi di SMKN 1 Cikarang Selatan. Sistem ini dikembangkan sebagai
-          bentuk kontribusi nyata mahasiswa Kerja Praktek dalam membantu digitalisasi
-          pengelolaan laboratorium sekolah.
-        </p>
-        <p style="color:#475569;line-height:1.8;font-size:.9rem;margin-bottom:0;">
-          Sebelum sistem ini ada, pencatatan inventaris dilakukan secara manual menggunakan
-          buku catatan dan spreadsheet yang tidak terintegrasi. Dengan hadirnya SIM Lab TJKT,
-          seluruh proses pencatatan, peminjaman, pengelolaan stok habis pakai, hingga
-          pembuatan laporan dapat dilakukan secara digital, cepat, dan akurat.
+          proyek mata kuliah <strong>Kerja Praktek (KP)</strong> oleh mahasiswa Semester 6
+          Universitas Pelita Bangsa.
         </p>
       </div>
     </div>
@@ -65,18 +62,18 @@
       <div class="panel-body">
         <div class="row g-3">
           {% set fitur = [
-            ('bi-pc-display',       'primary', 'Inventaris Tetap',
-             'Pengelolaan data aset tetap seperti PC, monitor, switch, printer dengan QR Code unik per barang.'),
-            ('bi-box-seam-fill',    'success', 'Barang Habis Pakai',
-             'Manajemen stok barang habis pakai seperti kabel UTP, RJ45, dan ATK dengan riwayat pemakaian lengkap.'),
-            ('bi-arrow-left-right', 'info',    'Peminjaman & Pengembalian',
-             'Sistem pencatatan peminjaman barang dengan tracking waktu dan deteksi keterlambatan otomatis.'),
-            ('bi-qr-code-scan',     'purple',  'QR Code & Scanner',
-             'Setiap barang memiliki QR Code unik. Scan dari smartphone langsung tampilkan detail barang.'),
-            ('bi-file-earmark-arrow-down', 'orange', 'Export Laporan',
-             'Export data inventaris, peminjaman, dan riwayat stok ke format Excel dan PDF siap cetak.'),
-            ('bi-bar-chart-fill',   'teal',    'Dashboard Statistik',
-             'Visualisasi data real-time: jumlah aset, kondisi barang, stok habis pakai, dan peminjaman aktif.'),
+            ('bi-pc-display',              'primary', 'Inventaris Tetap',
+             'Pengelolaan aset tetap: PC, monitor, switch, printer dengan QR Code unik per barang dan export Excel/PDF.'),
+            ('bi-box-seam-fill',           'success', 'Barang Habis Pakai',
+             'Manajemen stok barang habis pakai seperti kabel UTP dan konektor RJ45 dengan riwayat pemakaian per kelas.'),
+            ('bi-arrow-left-right',        'info',    'Peminjaman & Pengembalian',
+             'Pencatatan peminjaman barang dengan tracking waktu dan deteksi keterlambatan otomatis.'),
+            ('bi-qr-code-scan',            'purple',  'QR Code & Scanner',
+             'Setiap barang memiliki QR Code unik. Scan dari smartphone langsung menampilkan detail dan aksi.'),
+            ('bi-file-earmark-arrow-down', 'orange',  'Export Laporan',
+             'Export inventaris, peminjaman, dan riwayat stok ke Excel dan PDF siap cetak untuk administrasi.'),
+            ('bi-bar-chart-fill',          'teal',    'Dashboard Statistik',
+             'Visualisasi data real-time: kondisi aset, stok habis pakai, peminjaman aktif, dan grafik distribusi.'),
           ] %}
           {% for icon, color, nama, desk in fitur %}
           <div class="col-md-6">
@@ -101,19 +98,27 @@
         <h6 class="panel-title">
           <i class="bi bi-people-fill me-2 text-primary"></i>Tim Pengembang
         </h6>
-        <span class="text-muted small">Mahasiswa Kerja Praktek — 2026</span>
+        <div class="d-flex align-items-center gap-2">
+          <img src="{{ url_for('static', filename='img/logo_universitas.png') }}"
+               alt="Universitas Pelita Bangsa Megah"
+               style="height:28px;object-fit:contain;"/>
+          <span class="text-muted small">Semester 6 — 2026</span>
+        </div>
       </div>
       <div class="panel-body">
         <div class="row g-3">
           {% set tim = [
-            ('Kangga Fajarulhakim', '312310430', 'System and Web Developer',
-             'Bertanggung jawab dalam pengembangan aplikasi web, implementasi fitur sistem, serta integrasi antara antarmuka pengguna dengan basis data.',
+            ('Kangga Fajarulhakim', '312310430',
+             'Pengembangan Sistem',
+             'Bertanggung jawab dalam pengembangan aplikasi web,Analisa kebutuhan, implementasi fitur sistem, serta integrasi antara antarmuka pengguna dengan basis data.',
              'bi-diagram-3-fill', '#4361ee'),
-            ('Yahya Ramadhan',  '2211501024', 'Database Designer',
-             'Bertanggung jawab dalam perancangan struktur basis data, pembuatan relasi antar tabel, serta memastikan sistem penyimpanan data berjalan secara efisien dan terstruktur.',
+            ('Yahya Ramadhan',  '312310401',
+             'Perancangan Basis Data',
+             'Bertanggung jawab dalam merancang struktur basis data, menentukan relasi antar tabel, serta memastikan sistem penyimpanan data berjalan secara efisien.',
              'bi-server',         '#7c3aed'),
-            ('Rahmat Unsar',      '2211501047', 'Data Management',
-             'Bertanggung jawab dalam pengumpulan, pengolahan, dan penginputan data inventaris laboratorium ke dalam sistem, serta memastikan data yang dimasukkan akurat dan terorganisasi dengan baik.',
+            ('Rahmat Unsar',      '312310442',
+             'Pengolahan dan Entri Data',
+             'Bertanggung jawab dalam pengumpulan dan penginputan data inventaris laboratorium ke dalam sistem serta memastikan akurasi data yang dimasukkan.',
              'bi-palette-fill',   '#059669'),
           ] %}
           {% for nama, nim, peran, desk, icon, color in tim %}
@@ -124,44 +129,107 @@
               </div>
               <div class="about-dev-info">
                 <div class="about-dev-nama">{{ nama }}</div>
-                <div class="about-dev-nim">NIM: {{ nim }}</div>
+                <div class="about-dev-nim">NIM {{ nim }}</div>
                 <div class="about-dev-peran">{{ peran }}</div>
                 <div class="about-dev-desk">{{ desk }}</div>
               </div>
-              <div class="about-dev-badge" style="background:{{ color }}15;color:{{ color }};border:1.5px solid {{ color }}30;">
+              <div class="about-dev-badge"
+                   style="background:{{ color }}15;color:{{ color }};border:1.5px solid {{ color }}30;">
                 {{ loop.index }}
               </div>
             </div>
           </div>
           {% endfor %}
         </div>
+
       </div>
     </div>
 
-  </div>
+  </div><!-- end kolom kiri -->
 
   <!-- ── KOLOM KANAN ─────────────────────────────────────── -->
   <div class="col-lg-4">
 
-    <!-- Info Teknis -->
+    <!-- Info Universitas -->
     <div class="card-panel mb-4">
       <div class="panel-header">
         <h6 class="panel-title">
-          <i class="bi bi-cpu-fill me-2 text-primary"></i>Spesifikasi Teknis
+          <i class="bi bi-mortarboard-fill me-2 text-primary"></i>Universitas Asal
+        </h6>
+      </div>
+      <div class="panel-body">
+        <!-- Logo universitas -->
+        <div class="about-univ-logo-wrap">
+          <img src="{{ url_for('static', filename='img/logo_universitas.png') }}"
+               alt="Universitas Pelita Bangsa Megah"
+               class="about-univ-logo"/>
+        </div>
+        <div class="about-univ-name">Universitas Pelita Bangsa</div>
+        <div class="about-univ-sub">Program Studi Teknik Informatika</div>
+
+        {% set univ_info = [
+          ('Program',      'Kerja Praktek (KP)'),
+          ('Semester',     '6 (Enam)'),
+          ('Tahun',        '2026'),
+          ('Mata Kuliah',  'Kerja Praktek')
+        ] %}
+        <div class="mt-3">
+          {% for label, nilai in univ_info %}
+          <div class="about-info-row">
+            <div class="about-info-label">{{ label }}</div>
+            <div class="about-info-nilai">{{ nilai }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Sekolah Mitra -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-building me-2 text-primary"></i>Sekolah Mitra KP
+        </h6>
+      </div>
+      <div class="panel-body">
+        <div class="about-school-logo-wrap">
+          <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
+               alt="SMKN 1 Cikarang Selatan"
+               class="about-school-logo"/>
+        </div>
+        {% set skl_info = [
+          ('Nama Sekolah', 'SMKN 1 Cikarang Selatan'),
+          ('Lokasi',       'Cikarang Selatan, Bekasi'),
+          ('Jurusan Lab',  'TJKT'),
+          ('Unit',         'Laboratorium Komputer'),
+        ] %}
+        {% for label, nilai in skl_info %}
+        <div class="about-info-row">
+          <div class="about-info-label">{{ label }}</div>
+          <div class="about-info-nilai">{{ nilai }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Spesifikasi Teknis -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-cpu-fill me-2 text-primary"></i>Teknologi
         </h6>
       </div>
       <div class="panel-body p-0">
         {% set teknis = [
-          ('Backend',    'Python 3.x + Flask 3.0'),
+          ('Backend',    'Python + Flask 3.0'),
           ('Database',   'MySQL 8.0 (XAMPP)'),
-          ('Frontend',   'HTML5 + Bootstrap 5.3'),
-          ('Styling',    'CSS3 + Custom Variables'),
-          ('JavaScript', 'Vanilla JS + html5-qrcode'),
-          ('QR Code',    'Python qrcode library'),
+          ('Frontend',   'Bootstrap 5.3'),
+          ('JavaScript', 'Vanilla JS'),
+          ('QR Scanner', 'html5-qrcode'),
+          ('QR Generate','Python qrcode'),
           ('Export',     'openpyxl + ReportLab'),
           ('Chart',      'Chart.js 4.x'),
-          ('Ikon',       'Bootstrap Icons 1.11'),
-          ('Font',       'Plus Jakarta Sans'),
+          ('Launcher',   'PyQt6'),
         ] %}
         {% for label, nilai in teknis %}
         <div class="about-tech-row {% if loop.last %}last{% endif %}">
@@ -172,35 +240,7 @@
       </div>
     </div>
 
-    <!-- Informasi Institusi -->
-    <div class="card-panel mb-4">
-      <div class="panel-header">
-        <h6 class="panel-title">
-          <i class="bi bi-building me-2 text-primary"></i>Informasi Institusi
-        </h6>
-      </div>
-      <div class="panel-body">
-        <div class="about-school-logo-wrap">
-          <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
-               alt="Logo" class="about-school-logo"/>
-        </div>
-        {% set info = [
-          ('Nama Sekolah', 'SMKN 1 Cikarang Selatan'),
-          ('Lokasi',       'Cikarang Selatan, Bekasi, Jawa Barat'),
-          ('Jurusan Lab',  'Teknik Jaringan Komputer dan Telekomunikasi (TJKT)'),
-          ('Program',      'Kerja Praktek (KP)'),
-          ('Tahun',        '2026'),
-        ] %}
-        {% for label, nilai in info %}
-        <div class="about-info-row">
-          <div class="about-info-label">{{ label }}</div>
-          <div class="about-info-nilai">{{ nilai }}</div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- Changelog singkat -->
+    <!-- Versi -->
     <div class="card-panel">
       <div class="panel-header">
         <h6 class="panel-title">
@@ -209,10 +249,10 @@
       </div>
       <div class="panel-body p-0">
         {% set changelog = [
-          ('v2.0.0', '2026', 'primary',
-           'Modul habis pakai, peminjaman datetime, export Excel/PDF, QR auto-fix.'),
-          ('v1.0.0', '2026', 'success',
-           'Rilis pertama: inventaris tetap, QR Code, scanner, dashboard, login.'),
+          ('v2.0.0','2026','primary',
+           'Habis pakai, peminjaman datetime, export, QR auto-fix, launcher GUI.'),
+          ('v1.0.0','2026','success',
+           'Rilis pertama: inventaris, QR Code, scanner, dashboard, login.'),
         ] %}
         {% for ver, thn, color, desc in changelog %}
         <div class="about-changelog-item">
@@ -226,6 +266,6 @@
       </div>
     </div>
 
-  </div>
+  </div><!-- end kolom kanan -->
 </div>
 {% endblock %}

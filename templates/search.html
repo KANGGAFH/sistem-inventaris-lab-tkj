@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Pencarian: {{ q }}{% endblock %}
+{% block page_title %}Hasil Pencarian{% endblock %}
+
+{% block content %}
+
+<!-- Header Hasil -->
+<div class="search-result-header mb-4">
+  <div class="search-result-query">
+    <i class="bi bi-search me-2"></i>
+    Hasil pencarian untuk <strong>"{{ q }}"</strong>
+  </div>
+  <div class="search-result-meta">
+    {% if total > 0 %}
+      <span class="text-success fw-600">{{ total }} hasil ditemukan</span>
+      <span class="text-muted ms-2">di seluruh sistem</span>
+    {% else %}
+      <span class="text-danger fw-600">Tidak ada hasil</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if total == 0 %}
+<!-- Empty State -->
+<div class="card-panel">
+  <div class="panel-body text-center py-5">
+    <i class="bi bi-search display-4 text-muted d-block mb-3"></i>
+    <h5 class="fw-700 text-muted">Tidak ada hasil untuk "{{ q }}"</h5>
+    <p class="text-muted mt-2 mb-4">
+      Coba gunakan kata kunci lain, atau periksa ejaan pencarian.
+    </p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+      <a href="{{ url_for('barang_list') }}" class="btn-outline-custom">
+        <i class="bi bi-pc-display me-1"></i>Lihat Inventaris
+      </a>
+      <a href="{{ url_for('consumable_list') }}" class="btn-outline-custom">
+        <i class="bi bi-box-seam me-1"></i>Lihat Habis Pakai
+      </a>
+    </div>
+  </div>
+</div>
+
+{% else %}
+
+<div class="row g-4">
+
+  <!-- ── KOLOM KIRI ─────────────────────────────────────────── -->
+  <div class="col-lg-8">
+
+    <!-- INVENTARIS TETAP -->
+    {% if hasil_barang %}
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-pc-display me-2 text-primary"></i>
+          Inventaris Tetap
+          <span class="search-count-badge">{{ hasil_barang|length }}</span>
+        </h6>
+        <a href="{{ url_for('barang_list') }}?search={{ q }}"
+           class="btn-panel-link">Lihat semua</a>
+      </div>
+      <div class="panel-body p-0">
+        {% for b in hasil_barang %}
+        <div class="search-result-item">
+          <!-- QR thumb -->
+          <div class="search-result-icon search-icon-inventaris">
+            <i class="bi bi-pc-display"></i>
+          </div>
+          <div class="search-result-info">
+            <div class="search-result-nama">
+              {{ b.nama_barang|replace(q, '<mark class="search-highlight">'~q~'</mark>')|safe }}
+            </div>
+            <div class="search-result-meta-row">
+              <code class="kode-text" style="font-size:.72rem;">{{ b.kode_barang }}</code>
+              <span class="search-dot"></span>
+              <span class="text-muted small">{{ b.kategori }}</span>
+              {% if b.tipe %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">{{ b.tipe }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="search-result-badges">
+            {% if b.kondisi == 'Baik' %}
+              <span class="badge-kondisi kondisi-baik">{{ b.kondisi }}</span>
+            {% elif b.kondisi == 'Rusak Ringan' %}
+              <span class="badge-kondisi kondisi-ringan">{{ b.kondisi }}</span>
+            {% else %}
+              <span class="badge-kondisi kondisi-berat">{{ b.kondisi }}</span>
+            {% endif %}
+            <span class="text-muted small">{{ b.jumlah }} unit</span>
+          </div>
+          <div class="search-result-actions">
+            <a href="{{ url_for('barang_detail', kode=b.kode_barang) }}"
+               class="btn-action btn-detail" title="Detail" target="_blank">
+              <i class="bi bi-eye"></i>
+            </a>
+            <a href="{{ url_for('barang_edit', id=b.id) }}"
+               class="btn-action btn-edit" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- BARANG HABIS PAKAI -->
+    {% if hasil_consumable %}
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-box-seam me-2 text-success"></i>
+          Barang Habis Pakai
+          <span class="search-count-badge search-count-green">{{ hasil_consumable|length }}</span>
+        </h6>
+        <a href="{{ url_for('consumable_list') }}?search={{ q }}"
+           class="btn-panel-link">Lihat semua</a>
+      </div>
+      <div class="panel-body p-0">
+        {% for b in hasil_consumable %}
+        <div class="search-result-item">
+          <div class="search-result-icon search-icon-consumable">
+            <i class="bi bi-box-seam"></i>
+          </div>
+          <div class="search-result-info">
+            <div class="search-result-nama">
+              {{ b.nama_barang|replace(q, '<mark class="search-highlight">'~q~'</mark>')|safe }}
+            </div>
+            <div class="search-result-meta-row">
+              <code class="kode-text" style="font-size:.72rem;">{{ b.kode_barang }}</code>
+              <span class="search-dot"></span>
+              <span class="text-muted small">{{ b.kategori }}</span>
+              <span class="search-dot"></span>
+              <span class="text-muted small">{{ b.satuan }}</span>
+            </div>
+          </div>
+          <div class="search-result-badges">
+            {% if b.stok_sekarang == 0 %}
+              <span class="badge-kondisi kondisi-berat">Habis</span>
+            {% elif b.stok_sekarang <= b.stok_minimum %}
+              <span class="badge-kondisi kondisi-ringan">Stok Rendah</span>
+            {% else %}
+              <span class="badge-kondisi kondisi-baik">Aman</span>
+            {% endif %}
+            <span class="text-muted small">{{ b.stok_sekarang }} {{ b.satuan }}</span>
+          </div>
+          <div class="search-result-actions">
+            <a href="{{ url_for('consumable_transaksi', id=b.id) }}"
+               class="btn-action btn-detail" title="Kelola Stok">
+              <i class="bi bi-arrow-repeat"></i>
+            </a>
+            <a href="{{ url_for('consumable_edit', id=b.id) }}"
+               class="btn-action btn-edit" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- RIWAYAT PEMINJAMAN -->
+    {% if hasil_pinjam %}
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-arrow-left-right me-2 text-info"></i>
+          Riwayat Peminjaman
+          <span class="search-count-badge search-count-blue">{{ hasil_pinjam|length }}</span>
+        </h6>
+        <a href="{{ url_for('barang_riwayat') }}?search={{ q }}"
+           class="btn-panel-link">Lihat semua</a>
+      </div>
+      <div class="panel-body p-0">
+        {% for p in hasil_pinjam %}
+        <div class="search-result-item">
+          <div class="search-result-icon search-icon-pinjam">
+            <i class="bi bi-arrow-left-right"></i>
+          </div>
+          <div class="search-result-info">
+            <div class="search-result-nama">
+              {{ p.nama_peminjam|replace(q, '<mark class="search-highlight">'~q~'</mark>')|safe }}
+              {% if p.barang_dihapus %}
+                <span style="font-size:.68rem;background:#fef3c7;color:#92400e;
+                             padding:1px 6px;border-radius:10px;font-weight:600;margin-left:6px;">
+                  barang dihapus
+                </span>
+              {% endif %}
+            </div>
+            <div class="search-result-meta-row">
+              <code class="kode-text" style="font-size:.72rem;">{{ p.kode_pinjam }}</code>
+              <span class="search-dot"></span>
+              <span class="text-muted small">{{ p.nama_barang }}</span>
+              {% if p.kelas_jabatan %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">{{ p.kelas_jabatan }}</span>
+              {% endif %}
+              {% if p.tgl_pinjam %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">
+                  {{ p.tgl_pinjam.strftime('%d/%m/%Y') }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="search-result-badges">
+            {% if p.status == 'Dipinjam' %}
+              <span class="badge-status status-dipinjam">Dipinjam</span>
+            {% elif p.status == 'Dikembalikan' %}
+              <span class="badge-status status-kembali">Dikembalikan</span>
+            {% else %}
+              <span class="badge-status status-terlambat">Terlambat</span>
+            {% endif %}
+          </div>
+          <div class="search-result-actions">
+            <a href="{{ url_for('peminjaman_detail', id=p.id) }}"
+               class="btn-action btn-detail" title="Detail">
+              <i class="bi bi-eye"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- RIWAYAT STOK CONSUMABLE -->
+    {% if hasil_stok %}
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-clock-history me-2 text-warning"></i>
+          Riwayat Transaksi Stok
+          <span class="search-count-badge search-count-orange">{{ hasil_stok|length }}</span>
+        </h6>
+        <a href="{{ url_for('consumable_riwayat') }}"
+           class="btn-panel-link">Lihat semua</a>
+      </div>
+      <div class="panel-body p-0">
+        {% for r in hasil_stok %}
+        <div class="search-result-item">
+          <div class="search-result-icon search-icon-stok">
+            <i class="bi bi-{% if r.tipe_transaksi=='Masuk' %}arrow-down-circle{% elif r.tipe_transaksi=='Keluar' %}arrow-up-circle{% else %}pencil-square{% endif %}"></i>
+          </div>
+          <div class="search-result-info">
+            <div class="search-result-nama">
+              {% if r.nama_pemakai %}
+                {{ r.nama_pemakai|replace(q, '<mark class="search-highlight">'~q~'</mark>')|safe }}
+              {% else %}
+                {{ r.nama_barang or r.kode_barang }}
+              {% endif %}
+            </div>
+            <div class="search-result-meta-row">
+              <code class="kode-text" style="font-size:.72rem;">{{ r.kode_barang }}</code>
+              {% if r.kelas %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">{{ r.kelas }}</span>
+              {% endif %}
+              {% if r.mata_pelajaran %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">{{ r.mata_pelajaran }}</span>
+              {% endif %}
+              {% if r.created_at %}
+                <span class="search-dot"></span>
+                <span class="text-muted small">
+                  {{ r.created_at.strftime('%d/%m/%Y') }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="search-result-badges">
+            {% if r.tipe_transaksi == 'Masuk' %}
+              <span class="badge-transaksi trx-masuk">↓ Masuk</span>
+            {% elif r.tipe_transaksi == 'Keluar' %}
+              <span class="badge-transaksi trx-keluar">↑ Keluar</span>
+            {% else %}
+              <span class="badge-transaksi trx-koreksi">⟳ Koreksi</span>
+            {% endif %}
+            <span class="text-muted small">{{ r.jumlah }} → sisa {{ r.stok_sesudah }}</span>
+          </div>
+          <div class="search-result-actions">
+            {% if r.barang_id_real %}
+            <a href="{{ url_for('consumable_transaksi', id=r.barang_id_real) }}"
+               class="btn-action btn-detail" title="Kelola Stok">
+              <i class="bi bi-arrow-repeat"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- end col kiri -->
+
+  <!-- ── KOLOM KANAN — Ringkasan ─────────────────────────────── -->
+  <div class="col-lg-4">
+    <div class="card-panel">
+      <div class="panel-header">
+        <h6 class="panel-title">
+          <i class="bi bi-bar-chart-fill me-2"></i>Ringkasan
+        </h6>
+      </div>
+      <div class="panel-body">
+
+        <!-- Breakdown per kategori -->
+        {% set sections = [
+          ('bi-pc-display',      'primary', 'Inventaris Tetap',    hasil_barang|length,     url_for('barang_list')~'?search='~q),
+          ('bi-box-seam',        'success', 'Barang Habis Pakai',  hasil_consumable|length, url_for('consumable_list')~'?search='~q),
+          ('bi-arrow-left-right','info',    'Peminjaman',          hasil_pinjam|length,     url_for('barang_riwayat')~'?search='~q),
+          ('bi-clock-history',   'warning', 'Riwayat Stok',        hasil_stok|length,       url_for('consumable_riwayat')),
+        ] %}
+        {% for icon, color, label, count, link in sections %}
+        <a href="{{ link }}" class="search-summary-row {% if count == 0 %}search-summary-empty{% endif %}">
+          <div class="search-summary-icon search-icon-{{ color }}">
+            <i class="bi {{ icon }}"></i>
+          </div>
+          <span class="search-summary-label">{{ label }}</span>
+          <span class="search-summary-count {% if count > 0 %}text-{{ color }}{% else %}text-muted{% endif %}">
+            {{ count }}
+          </span>
+        </a>
+        {% endfor %}
+
+        <div class="search-summary-total mt-3">
+          <span class="fw-600">Total ditemukan</span>
+          <span class="fw-800 text-primary">{{ total }}</span>
+        </div>
+
+        <!-- Pencarian lain -->
+        <div class="mt-4">
+          <div class="text-muted small fw-600 mb-2">Cari kata lain:</div>
+          <form action="{{ url_for('global_search') }}" method="GET">
+            <div class="d-flex gap-2">
+              <input type="text" name="q" class="form-control form-control-custom"
+                     placeholder="Kata kunci baru..." style="font-size:.85rem;"/>
+              <button type="submit" class="btn-primary-custom" style="padding:0 14px;">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- end row -->
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Focus search input pada halaman hasil
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('globalSearchInput');
+  if (inp) inp.select();
+});
+</script>
+{% endblock %}

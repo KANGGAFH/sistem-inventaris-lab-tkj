@@ -12,7 +12,8 @@
 <body class="detail-body">
 
 <div class="detail-wrapper">
-  <!-- Header -->
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
   <div class="detail-header">
     <div class="detail-header-icon">
       <img src="{{ url_for('static', filename='img/icon_sekolah.png') }}"
@@ -33,16 +34,16 @@
 
   <div class="detail-body-wrap">
 
-    <!-- QR Code -->
+    <!-- ── QR Code ─────────────────────────────────────── -->
+    {% if barang.qr_path %}
     <div class="detail-qr-section text-center mb-4">
-      {% if barang.qr_path %}
-        <img src="{{ url_for('static', filename=barang.qr_path) }}"
-             alt="QR Code" class="detail-qr-img"/>
-        <div class="text-muted small mt-1">QR Code Barang</div>
-      {% endif %}
+      <img src="{{ url_for('static', filename=barang.qr_path) }}"
+           alt="QR Code" class="detail-qr-img"/>
+      <div class="text-muted small mt-1">QR Code Barang</div>
     </div>
+    {% endif %}
 
-    <!-- Info Barang -->
+    <!-- ── Info Barang ─────────────────────────────────── -->
     <div class="detail-info-grid">
       <div class="detail-info-item">
         <div class="detail-info-label"><i class="bi bi-tag-fill me-1"></i>Kode Barang</div>
@@ -54,7 +55,7 @@
       </div>
       {% if barang.tipe %}
       <div class="detail-info-item">
-        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Tipe / Spesifikasi</div>
+        <div class="detail-info-label"><i class="bi bi-cpu me-1"></i>Tipe</div>
         <div class="detail-info-value">{{ barang.tipe }}</div>
       </div>
       {% endif %}
@@ -76,7 +77,7 @@
       </div>
       {% if barang.spesifikasi %}
       <div class="detail-info-item full-width">
-        <div class="detail-info-label"><i class="bi bi-list-ul me-1"></i>Spesifikasi Teknis</div>
+        <div class="detail-info-label"><i class="bi bi-list-ul me-1"></i>Spesifikasi</div>
         <div class="detail-info-value">{{ barang.spesifikasi }}</div>
       </div>
       {% endif %}
@@ -86,21 +87,69 @@
         <div class="detail-info-value">{{ barang.keterangan }}</div>
       </div>
       {% endif %}
-      <div class="detail-info-item">
-        <div class="detail-info-label"><i class="bi bi-clock me-1"></i>Tanggal Input</div>
-        <div class="detail-info-value">{{ barang.created_at.strftime('%d %B %Y, %H:%M') if barang.created_at else '—' }}</div>
-      </div>
     </div>
 
-    <!-- ═══ TOMBOL PEMINJAMAN ══════════════════════════════ -->
-    {% if barang.kondisi == 'Baik' %}
+    <!-- ══ AKSI UTAMA ════════════════════════════════════ -->
     <div class="detail-pinjam-section mt-4">
-      <div class="detail-pinjam-box">
+
+      {% if peminjaman_aktif %}
+      <!-- ── Sedang dipinjam → tampilkan info + tombol kembalikan ── -->
+      <div class="detail-dipinjam-alert">
+        <div class="detail-dipinjam-badge">
+          {% if peminjaman_aktif.status == 'Terlambat' %}
+            <i class="bi bi-alarm-fill me-1"></i>TERLAMBAT
+          {% else %}
+            <i class="bi bi-arrow-left-right me-1"></i>SEDANG DIPINJAM
+          {% endif %}
+        </div>
+        <div class="detail-dipinjam-info">
+          <div class="detail-dipinjam-row">
+            <i class="bi bi-person-fill me-2 text-primary"></i>
+            <strong>{{ peminjaman_aktif.nama_peminjam }}</strong>
+            {% if peminjaman_aktif.kelas_jabatan %}
+              <span class="text-muted ms-1">· {{ peminjaman_aktif.kelas_jabatan }}</span>
+            {% endif %}
+          </div>
+          <div class="detail-dipinjam-row mt-1">
+            <i class="bi bi-calendar-event me-2 text-muted"></i>
+            <span class="text-muted small">
+              Dipinjam: {{ peminjaman_aktif.tgl_pinjam.strftime('%d %b %Y, %H:%M') if peminjaman_aktif.tgl_pinjam else '—' }}
+            </span>
+          </div>
+          <div class="detail-dipinjam-row mt-1">
+            <i class="bi bi-calendar-check me-2 {% if peminjaman_aktif.status == 'Terlambat' %}text-danger{% else %}text-muted{% endif %}"></i>
+            <span class="small {% if peminjaman_aktif.status == 'Terlambat' %}text-danger fw-700{% else %}text-muted{% endif %}">
+              Rencana kembali: {{ peminjaman_aktif.tgl_kembali_rencana.strftime('%d %b %Y, %H:%M') if peminjaman_aktif.tgl_kembali_rencana else '—' }}
+            </span>
+          </div>
+          <div class="detail-dipinjam-row mt-1">
+            <i class="bi bi-hash me-2 text-muted"></i>
+            <code style="font-size:.72rem;color:#64748b;">{{ peminjaman_aktif.kode_pinjam }}</code>
+          </div>
+        </div>
+        <!-- Tombol Kembalikan -->
+        <a href="{{ url_for('peminjaman_kembalikan', id=peminjaman_aktif.id) }}"
+           class="btn-kembalikan {% if peminjaman_aktif.status == 'Terlambat' %}btn-kembalikan-urgent{% endif %}">
+          <i class="bi bi-arrow-return-left me-2"></i>
+          Kembalikan Sekarang
+        </a>
+      </div>
+
+      {% elif barang.kondisi in ['Baik', 'Rusak Ringan'] %}
+      <!-- ── Tersedia (Baik / Rusak Ringan) → tampilkan tombol pinjam ── -->
+      <div class="detail-pinjam-box {% if barang.kondisi == 'Rusak Ringan' %}detail-pinjam-warning{% endif %}">
         <div class="detail-pinjam-info">
           <i class="bi bi-arrow-left-right detail-pinjam-icon"></i>
           <div>
             <div class="detail-pinjam-label">Barang ini tersedia untuk dipinjam</div>
-            <div class="detail-pinjam-sub">Stok: {{ barang.jumlah }} unit · Kondisi: {{ barang.kondisi }}</div>
+            <div class="detail-pinjam-sub">
+              {{ barang.jumlah }} unit
+              {% if barang.kondisi == 'Rusak Ringan' %}
+                · <span style="color:#d97706;font-weight:700;">⚠ Kondisi Rusak Ringan</span>
+              {% else %}
+                · Kondisi {{ barang.kondisi }}
+              {% endif %}
+            </div>
           </div>
         </div>
         <a href="{{ url_for('peminjaman_tambah') }}?barang_id={{ barang.id }}"
@@ -108,19 +157,21 @@
           <i class="bi bi-arrow-left-right me-2"></i>Pinjam Barang Ini
         </a>
       </div>
-    </div>
-    {% else %}
-    <div class="detail-pinjam-section mt-4">
+
+      {% else %}
+      <!-- ── Rusak Berat → tidak bisa dipinjam ── -->
       <div class="detail-pinjam-box detail-pinjam-unavail">
-        <i class="bi bi-exclamation-triangle-fill me-2" style="color:#b45309;font-size:1.2rem;"></i>
-        <span style="color:#92400e;font-size:.875rem;font-weight:600;">
+        <i class="bi bi-x-octagon-fill me-2"
+           style="color:#b91c1c;font-size:1.2rem;"></i>
+        <span style="color:#7f1d1d;font-size:.875rem;font-weight:600;">
           Barang tidak dapat dipinjam — kondisi {{ barang.kondisi }}
         </span>
       </div>
-    </div>
-    {% endif %}
+      {% endif %}
 
-    <!-- Riwayat Scan -->
+    </div>
+
+    <!-- ── Riwayat Scan ─────────────────────────────────── -->
     {% if riwayat %}
     <div class="detail-scan-history mt-4">
       <div class="detail-section-title">
@@ -140,10 +191,10 @@
 
     <div class="text-center mt-4">
       <div class="text-muted small">
-        <i class="bi bi-qr-code me-1"></i>
-        SMKN 1 Cikarang Selatan — Lab TJKT
+        <i class="bi bi-qr-code me-1"></i>SMKN 1 Cikarang Selatan — Lab TJKT
       </div>
     </div>
+
   </div>
 </div>
 

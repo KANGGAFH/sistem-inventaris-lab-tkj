@@ -79,32 +79,105 @@ def login_required(f):
     return decorated
 
 def generate_kode_barang(kategori):
-    """Format: [PREFIX_KAT]-[TAHUN]-[NOURUT]  contoh: KOM-2024-0001"""
+    """Format: [PREFIX_KAT]-[TAHUN]-[NOURUT]  contoh: KOM-2024-0001
+    
+    Menggunakan MAX nomor urut tertinggi yang pernah ada (bukan COUNT),
+    sehingga penghapusan barang tidak menyebabkan duplikasi kode.
+    """
     prefix = KATEGORI_PREFIX.get(kategori, 'LNY')
     tahun  = datetime.now().strftime('%Y')
+    pola   = f'{prefix}-{tahun}-%'
     cur    = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) AS n FROM barang WHERE kode_barang LIKE %s",
-                (f'{prefix}-{tahun}-%',))
-    n = cur.fetchone()['n']; cur.close()
-    return f"{prefix}-{tahun}-{n+1:04d}"
+    # Ambil nomor urut tertinggi yang PERNAH ADA, bukan jumlah baris
+    cur.execute(
+        """SELECT COALESCE(
+               MAX(CAST(SUBSTRING_INDEX(kode_barang, '-', -1) AS UNSIGNED)),
+               0) AS max_n
+           FROM barang
+           WHERE kode_barang LIKE %s""",
+        (pola,)
+    )
+    max_n = int(cur.fetchone()['max_n'])  # cast Decimal → int agar format :04d tidak error
+    cur.close()
+    # Pastikan kode baru belum terpakai (loop sampai dapat yang bebas)
+    while True:
+        max_n += 1
+        kode_baru = f"{prefix}-{tahun}-{max_n:04d}"
+        cur2 = mysql.connection.cursor()
+        cur2.execute("SELECT id FROM barang WHERE kode_barang = %s", (kode_baru,))
+        exists = cur2.fetchone(); cur2.close()
+        if not exists:
+            return kode_baru
 
 def generate_kode_consumable(kategori):
-    """Format: CSM-[PREFIX_KAT]-[TAHUN]-[NOURUT]  contoh: CSM-KBL-2024-0001"""
+    """Format: CSM-[PREFIX_KAT]-[TAHUN]-[NOURUT]  contoh: CSM-KBL-2024-0001
+    
+    Menggunakan MAX nomor urut tertinggi yang pernah ada,
+    bukan COUNT, agar aman setelah penghapusan data.
+    """
     prefix = KATEGORI_CONSUMABLE.get(kategori, 'LNY')
     tahun  = datetime.now().strftime('%Y')
+    pola   = f'CSM-{prefix}-{tahun}-%'
     cur    = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) AS n FROM barang_habis_pakai WHERE kode_barang LIKE %s",
-                (f'CSM-{prefix}-{tahun}-%',))
-    n = cur.fetchone()['n']; cur.close()
-    return f"CSM-{prefix}-{tahun}-{n+1:04d}"
+    cur.execute(
+        """SELECT COALESCE(
+               MAX(CAST(SUBSTRING_INDEX(kode_barang, '-', -1) AS UNSIGNED)),
+               0) AS max_n
+           FROM barang_habis_pakai
+           WHERE kode_barang LIKE %s""",
+        (pola,)
+    )
+    max_n = int(cur.fetchone()['max_n'])  # cast Decimal → int agar format :04d tidak error
+    cur.close()
+    while True:
+        max_n += 1
+        kode_baru = f"CSM-{prefix}-{tahun}-{max_n:04d}"
+        cur2 = mysql.connection.cursor()
+        cur2.execute("SELECT id FROM barang_habis_pakai WHERE kode_barang = %s", (kode_baru,))
+        exists = cur2.fetchone(); cur2.close()
+        if not exists:
+            return kode_baru
 
 def generate_kode_pinjam():
     today = datetime.now().strftime('%Y%m%d')
     cur   = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) AS n FROM peminjaman WHERE kode_pinjam LIKE %s",
-                (f'PJM-{today}-%',))
-    n = cur.fetchone()['n']; cur.close()
-    return f"PJM-{today}-{n+1:04d}"
+    # Peminjaman juga pakai MAX agar aman
+    cur.execute(
+        """SELECT COALESCE(
+               MAX(CAST(SUBSTRING_INDEX(kode_pinjam, '-', -1) AS UNSIGNED)),
+               0) AS max_n
+           FROM peminjaman
+           WHERE kode_pinjam LIKE %s""",
+        (f'PJM-{today}-%',))
+    max_n = int(cur.fetchone()['max_n'])  # cast Decimal → int agar format :04d tidak error
+    cur.close()
+    while True:
+        max_n += 1
+        kode_baru = f"PJM-{today}-{max_n:04d}"
+        cur2 = mysql.connection.cursor()
+        cur2.execute("SELECT id FROM peminjaman WHERE kode_pinjam = %s", (kode_baru,))
+        exists = cur2.fetchone(); cur2.close()
+        if not exists:
+            return kode_baru
+
+def generate_kode_unit(kode_barang, nomor_unit):
+    """Format: [KODE_BARANG]-U[NOURUT_2DIGIT]  contoh: TAB-2024-0001-U07"""
+    n = int(nomor_unit)
+    return f"{kode_barang}-U{n:02d}"
+
+def buat_qr_unit(kode_unit):
+    """QR Code untuk unit barang — link ke /unit/detail/<kode_unit>."""
+    qr_dir = os.path.join(app.static_folder, 'qr')
+    os.makedirs(qr_dir, exist_ok=True)
+    url  = f"{_get_server_url()}/unit/detail/{kode_unit}"
+    qr   = qrcode.QRCode(version=1,
+                          error_correction=qrcode.constants.ERROR_CORRECT_H,
+                          box_size=10, border=4)
+    qr.add_data(url); qr.make(fit=True)
+    img  = qr.make_image(fill_color="#1e3a8a", back_color="white")
+    fn   = f"qr_{kode_unit}.png"
+    img.save(os.path.join(qr_dir, fn))
+    return f"qr/{fn}"
 
 def _get_server_url():
     """Dapatkan base URL server secara otomatis dari request context."""
@@ -142,6 +215,30 @@ def buat_qr_consumable(kode_barang):
     fn   = f"qr_{kode_barang}.png"
     img.save(os.path.join(qr_dir, fn))
     return f"qr/{fn}"
+
+# ─────────────────────────────────────────────────────────────
+# HELPER: Filter waktu — digunakan di riwayat peminjaman & stok
+# ─────────────────────────────────────────────────────────────
+PERIOD_LABELS = {
+    'today'  : 'Hari Ini',
+    '7days'  : '7 Hari Terakhir',
+    '1month' : '1 Bulan Terakhir',
+    '1year'  : '1 Tahun Terakhir',
+    ''       : 'Semua Waktu',
+}
+
+def get_date_range(period):
+    """Kembalikan (date_from, label) berdasarkan kode period."""
+    now = datetime.now()
+    if period == 'today':
+        return now.replace(hour=0, minute=0, second=0, microsecond=0), 'Hari Ini'
+    elif period == '7days':
+        return now - timedelta(days=7), '7 Hari Terakhir'
+    elif period == '1month':
+        return now - timedelta(days=30), '1 Bulan Terakhir'
+    elif period == '1year':
+        return now - timedelta(days=365), '1 Tahun Terakhir'
+    return None, 'Semua Waktu'
 
 def build_filter(search, kategori, jenis, kondisi, sort, order):
     clauses, params = [], []
@@ -348,12 +445,21 @@ def barang_hapus(id):
     cur.execute("SELECT nama_barang,qr_path FROM barang WHERE id=%s",(id,))
     b = cur.fetchone()
     if b:
+        # Simpan nama barang ke kolom nama_barang di semua tabel riwayat
+        # sebelum barang dihapus, agar riwayat tetap terbaca walau barang sudah tidak ada
+        cur.execute("""UPDATE peminjaman
+                        SET barang_id = NULL
+                        WHERE barang_id = %s""", (id,))
+        cur.execute("""UPDATE riwayat_scan
+                        SET barang_id = NULL
+                        WHERE barang_id = %s""", (id,))
+        # Hapus file QR
         if b['qr_path']:
             f = os.path.join(app.static_folder, b['qr_path'])
             if os.path.exists(f): os.remove(f)
         cur.execute("DELETE FROM barang WHERE id=%s",(id,))
         mysql.connection.commit()
-        flash(f'Barang "{b["nama_barang"]}" berhasil dihapus.','success')
+        flash(f'Barang "{b["nama_barang"]}" berhasil dihapus. Riwayat pemakaian tetap tersimpan.','success')
     cur.close()
     return redirect(url_for('barang_list'))
 
@@ -366,16 +472,30 @@ def barang_detail(kode):
     cur.execute("SELECT * FROM barang WHERE kode_barang=%s",(kode,))
     barang = cur.fetchone()
     if not barang: return render_template('404.html'),404
+
+    # Catat riwayat scan
     cur.execute("""INSERT INTO riwayat_scan
         (barang_id,kode_barang,nama_barang,ip_scanner,user_agent)
         VALUES(%s,%s,%s,%s,%s)""",
         (barang['id'],kode,barang['nama_barang'],
          request.remote_addr,request.user_agent.string))
     mysql.connection.commit()
+
+    # Cek apakah barang ini sedang dipinjam (untuk tampilkan tombol kembalikan)
+    cur.execute("""SELECT p.id, p.kode_pinjam, p.nama_peminjam,
+                          p.kelas_jabatan, p.tgl_pinjam, p.tgl_kembali_rencana,
+                          p.status
+                   FROM peminjaman p
+                   WHERE p.barang_id=%s AND p.status IN ('Dipinjam','Terlambat')
+                   ORDER BY p.tgl_pinjam DESC LIMIT 1""",
+                (barang['id'],))
+    peminjaman_aktif = cur.fetchone()
+
     cur.execute("SELECT * FROM riwayat_scan WHERE barang_id=%s ORDER BY scanned_at DESC LIMIT 10",
                 (barang['id'],))
     riwayat = cur.fetchall(); cur.close()
-    return render_template('detail.html', barang=barang, riwayat=riwayat)
+    return render_template('detail.html', barang=barang, riwayat=riwayat,
+                           peminjaman_aktif=peminjaman_aktif)
 
 # ============================================================
 # CETAK LABEL QR
@@ -406,11 +526,39 @@ def scanner():
 def api_barang(kode):
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM barang WHERE kode_barang=%s",(kode,))
-    b = cur.fetchone(); cur.close()
+    b = cur.fetchone()
     if b:
         for k in ('tanggal_pengadaan','created_at','updated_at'):
             if b.get(k): b[k]=str(b[k])
+        # Sertakan data peminjaman aktif jika ada (hanya untuk barang tanpa unit tracking)
+        pinjam = None
+        if not b.get('has_unit_tracking'):
+            cur.execute("""SELECT id, kode_pinjam, nama_peminjam,
+                                  kelas_jabatan, tgl_pinjam, tgl_kembali_rencana, status
+                           FROM peminjaman
+                           WHERE barang_id=%s AND status IN ('Dipinjam','Terlambat')
+                           ORDER BY tgl_pinjam DESC LIMIT 1""", (b['id'],))
+            pinjam = cur.fetchone()
+            if pinjam:
+                for k in ('tgl_pinjam','tgl_kembali_rencana'):
+                    if pinjam.get(k): pinjam[k] = pinjam[k].strftime('%d %b %Y, %H:%M')
+
+        b['peminjaman_aktif'] = pinjam
+
+        # Sertakan daftar unit jika has_unit_tracking
+        if b.get('has_unit_tracking'):
+            cur.execute("""SELECT id, kode_unit, nomor_unit, label_unit,
+                                  kondisi, status
+                           FROM barang_unit WHERE barang_id=%s
+                           ORDER BY CAST(nomor_unit AS UNSIGNED)""", (b['id'],))
+            units = cur.fetchall()
+            b['units'] = units
+        else:
+            b['units'] = []
+
+        cur.close()
         return jsonify({'status':'found','data':b})
+    cur.close()
     return jsonify({'status':'not_found'}),404
 
 # ============================================================
@@ -464,7 +612,7 @@ def peminjaman_list():
 def peminjaman_tambah():
     cur = mysql.connection.cursor()
     # Hanya barang kondisi Baik yang bisa dipinjam
-    cur.execute("SELECT id,kode_barang,nama_barang,kategori,tipe,jumlah FROM barang WHERE kondisi='Baik' ORDER BY nama_barang")
+    cur.execute("SELECT id,kode_barang,nama_barang,kategori,tipe,jumlah,kondisi FROM barang WHERE kondisi IN ('Baik','Rusak Ringan') ORDER BY nama_barang")
     barang_tersedia = cur.fetchall()
 
     if request.method=='POST':
@@ -483,8 +631,11 @@ def peminjaman_tambah():
         if jml_pinjam > sisa:
             flash(f'Stok tidak cukup. Tersedia: {sisa} unit.','danger')
             cur.close()
+            preselect_id = request.form.get('barang_id','')
             return render_template('peminjaman_form.html',
-                                   barang_tersedia=barang_tersedia, mode='tambah', data=None)
+                                   barang_tersedia=barang_tersedia, mode='tambah', data=None,
+                                   today=datetime.now().strftime('%Y-%m-%d'),
+                                   preselect_id=preselect_id)
 
         kode_pinjam = generate_kode_pinjam()
 
@@ -492,29 +643,65 @@ def peminjaman_tambah():
         tgl_pinjam_dt          = f"{request.form['tgl_pinjam']} {request.form['jam_pinjam']}:00"
         tgl_kembali_rencana_dt = f"{request.form['tgl_kembali_rencana']} {request.form['jam_kembali_rencana']}:00"
 
+        unit_id   = request.form.get('unit_id', '') or None
+        kode_unit = None
+        if unit_id:
+            unit_id = int(unit_id)
+            cur.execute("SELECT kode_unit FROM barang_unit WHERE id=%s",(unit_id,))
+            u = cur.fetchone()
+            if u: kode_unit = u['kode_unit']
+
         cur.execute("""INSERT INTO peminjaman
             (kode_pinjam,barang_id,kode_barang,nama_peminjam,kelas_jabatan,
-             no_hp,keperluan,jumlah_pinjam,tgl_pinjam,tgl_kembali_rencana,status)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'Dipinjam')""",
+             no_hp,keperluan,jumlah_pinjam,tgl_pinjam,tgl_kembali_rencana,
+             unit_id,kode_unit,status)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'Dipinjam')""",
             (kode_pinjam, barang_id, b['kode_barang'],
              request.form['nama_peminjam'].strip(),
              request.form.get('kelas_jabatan','').strip(),
              request.form.get('no_hp','').strip(),
              request.form.get('keperluan','').strip(),
              jml_pinjam,
-             tgl_pinjam_dt,
-             tgl_kembali_rencana_dt))
+             tgl_pinjam_dt, tgl_kembali_rencana_dt,
+             unit_id, kode_unit))
+
+        # Update status unit menjadi Dipinjam
+        if unit_id:
+            cur.execute("UPDATE barang_unit SET status='Dipinjam' WHERE id=%s",(unit_id,))
+
         mysql.connection.commit(); cur.close()
         flash(f'Peminjaman {kode_pinjam} berhasil dicatat.','success')
         return redirect(url_for('peminjaman_list'))
 
+    # Ambil data unit untuk setiap barang yang has_unit_tracking
+    units_per_barang = {}
+    for b in barang_tersedia:
+            cur2 = mysql.connection.cursor()
+            cur2.execute("""SELECT id, kode_unit, nomor_unit, label_unit, kondisi
+                             FROM barang_unit
+                             WHERE barang_id=%s AND status='Tersedia'
+                               AND kondisi != 'Rusak Berat'
+                             ORDER BY CAST(nomor_unit AS UNSIGNED)""", (b['id'],))
+            rows_unit = cur2.fetchall()
+            cur2.close()
+            # Konversi ke list of dict biasa agar tojson berjalan
+            units_per_barang[str(b['id'])] = [
+                {'id': u['id'], 'kode_unit': u['kode_unit'],
+                 'nomor_unit': u['nomor_unit'], 'label_unit': u['label_unit'] or '',
+                 'kondisi': u['kondisi']}
+                for u in rows_unit
+            ]
     cur.close()
-    # Support preselect dari halaman detail barang (klik tombol "Pinjam Barang Ini")
-    preselect_id = request.args.get('barang_id', '')
+
+    # Support preselect dari scan QR
+    preselect_id   = request.args.get('barang_id', '')
+    preselect_unit = request.args.get('unit_id', '')
     return render_template('peminjaman_form.html',
                            barang_tersedia=barang_tersedia, mode='tambah', data=None,
                            today=datetime.now().strftime('%Y-%m-%d'),
-                           preselect_id=preselect_id)
+                           preselect_id=preselect_id,
+                           preselect_unit=preselect_unit,
+                           units_per_barang=units_per_barang)
 
 # ============================================================
 # PEMINJAMAN — KEMBALIKAN
@@ -550,6 +737,13 @@ def peminjaman_kembalikan(id):
         if urutan.get(kondisi_kembali,0) > urutan.get(kondisi_skrg,0):
             cur.execute("UPDATE barang SET kondisi=%s WHERE id=%s",
                         (kondisi_kembali, pinjam['barang_id']))
+
+        # Kembalikan status unit ke Tersedia jika barang pakai unit tracking
+        if pinjam.get('unit_id'):
+            cur.execute("""UPDATE barang_unit
+                           SET status='Tersedia', kondisi=%s
+                           WHERE id=%s""",
+                        (kondisi_kembali, pinjam['unit_id']))
 
         mysql.connection.commit(); cur.close()
         flash(f'Barang "{pinjam["nama_barang"]}" berhasil dicatat kembali.','success')
@@ -862,12 +1056,20 @@ def consumable_edit(id):
 @login_required
 def consumable_hapus(id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT nama_barang FROM barang_habis_pakai WHERE id=%s",(id,))
+    cur.execute("SELECT nama_barang, qr_path FROM barang_habis_pakai WHERE id=%s",(id,))
     data = cur.fetchone()
     if data:
+        # Null-out barang_id di riwayat_stok agar riwayat tidak ikut terhapus
+        cur.execute("""UPDATE riwayat_stok
+                        SET barang_id = NULL
+                        WHERE barang_id = %s""", (id,))
+        # Hapus file QR jika ada
+        if data.get('qr_path'):
+            f = os.path.join(app.static_folder, data['qr_path'])
+            if os.path.exists(f): os.remove(f)
         cur.execute("DELETE FROM barang_habis_pakai WHERE id=%s",(id,))
         mysql.connection.commit()
-        flash(f'Barang "{data["nama_barang"]}" berhasil dihapus.','success')
+        flash(f'Barang "{data["nama_barang"]}" berhasil dihapus. Riwayat transaksi tetap tersimpan.','success')
     cur.close()
     return redirect(url_for('consumable_list'))
 
@@ -933,19 +1135,60 @@ def consumable_transaksi(id):
 @app.route('/consumable/riwayat')
 @login_required
 def consumable_riwayat():
-    f_tipe = request.args.get('tipe', '').strip()
+    f_tipe   = request.args.get('tipe',   '').strip()
+    f_period = request.args.get('period', '').strip()
+    search   = request.args.get('search', '').strip()
+
+    date_from, period_label = get_date_range(f_period)
 
     clauses, params = [], []
     if f_tipe:
         clauses.append("r.tipe_transaksi=%s"); params.append(f_tipe)
+    if date_from:
+        clauses.append("r.created_at >= %s"); params.append(date_from)
+    if search:
+        like = f"%{search}%"
+        clauses.append(
+            "(r.nama_barang LIKE %s OR r.kode_barang LIKE %s"
+            " OR r.nama_pemakai LIKE %s OR r.kelas LIKE %s)"
+        )
+        params += [like, like, like, like]
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     cur = mysql.connection.cursor()
     cur.execute(f"""SELECT r.*, b.satuan FROM riwayat_stok r
                    LEFT JOIN barang_habis_pakai b ON r.barang_id=b.id
-                   {where} ORDER BY r.created_at DESC LIMIT 200""", params)
-    riwayat = cur.fetchall(); cur.close()
-    return render_template('consumable_riwayat.html', riwayat=riwayat, f_tipe=f_tipe)
+                   {where} ORDER BY r.created_at DESC LIMIT 500""", params)
+    riwayat = cur.fetchall()
+
+    # Stats untuk periode aktif (inisialisasi default 0 agar tidak error)
+    s_masuk = s_keluar = s_koreksi = 0
+    sp = [date_from] if date_from else []
+    sw = "WHERE created_at >= %s" if date_from else ""
+    cur.execute(f"SELECT COUNT(*) AS n FROM riwayat_stok {sw}", sp)
+    s_total = cur.fetchone()['n']
+    for tipe in ['Masuk','Keluar','Koreksi']:
+        # Bangun sw2 dengan benar: WHERE xxx AND yyy ATAU WHERE yyy
+        if sw:
+            sw2 = sw + f" AND tipe_transaksi='{tipe}'"
+        else:
+            sw2 = f"WHERE tipe_transaksi='{tipe}'"
+        cur.execute(f"SELECT COUNT(*) AS n FROM riwayat_stok {sw2}", sp)
+        val = cur.fetchone()['n']
+        if tipe=='Masuk':    s_masuk   = val
+        elif tipe=='Keluar': s_keluar  = val
+        else:                s_koreksi = val
+    cur.close()
+
+    return render_template('consumable_riwayat.html',
+        riwayat=riwayat, f_tipe=f_tipe,
+        f_period=f_period, period_label=period_label,
+        search=search,
+        stats=dict(total=s_total, masuk=s_masuk,
+                   keluar=s_keluar, koreksi=s_koreksi),
+        PERIOD_LABELS=PERIOD_LABELS,
+    )
+
 
 # ============================================================
 # CONSUMABLE — DETAIL (target QR scan, publik tanpa login)
@@ -1265,12 +1508,14 @@ def peminjaman_export_pdf():
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
     from reportlab.lib.units import cm
-    from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle,
-                                     Paragraph, Spacer)
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
     f_status = request.args.get('status', '').strip()
+    f_period = request.args.get('period', '').strip()
     search   = request.args.get('search', '').strip()
+
+    date_from, period_label = get_date_range(f_period)
 
     clauses, params = [], []
     if search:
@@ -1279,39 +1524,42 @@ def peminjaman_export_pdf():
         params += [like, like, like]
     if f_status:
         clauses.append("p.status=%s"); params.append(f_status)
+    if date_from:
+        clauses.append("p.tgl_pinjam >= %s"); params.append(date_from)
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     cur = mysql.connection.cursor()
-    cur.execute(f"""SELECT p.*, b.nama_barang, b.tipe
+    cur.execute(f"""SELECT p.*,
+                        COALESCE(b.nama_barang, p.kode_barang) AS nama_barang,
+                        COALESCE(b.tipe, '') AS tipe
                     FROM peminjaman p LEFT JOIN barang b ON p.barang_id=b.id
-                    {where} ORDER BY p.created_at DESC""", params)
+                    {where} ORDER BY p.tgl_pinjam DESC""", params)
     rows = cur.fetchall(); cur.close()
 
     def fmt_dt(val):
         if not val: return '-'
-        try:    return val.strftime('%d/%m/%Y %H:%M')
+        try: return val.strftime('%d/%m/%Y %H:%M')
         except: return str(val)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
                             leftMargin=1.2*cm, rightMargin=1.2*cm,
                             topMargin=1.8*cm, bottomMargin=1.2*cm)
-    styles = getSampleStyleSheet(); elems = []
-    navy   = colors.HexColor('#1e3a8a')
-
-    ts_h = ParagraphStyle('h', fontSize=13, textColor=navy, alignment=1,
-                           fontName='Helvetica-Bold', spaceAfter=4)
-    ts_s = ParagraphStyle('s', fontSize=9,  textColor=colors.HexColor('#475569'),
+    elems = []; navy = colors.HexColor('#1e3a8a')
+    ts_h = ParagraphStyle('h', fontSize=12, textColor=navy, alignment=1,
+                           fontName='Helvetica-Bold', spaceAfter=3)
+    ts_s = ParagraphStyle('s', fontSize=9, textColor=colors.HexColor('#475569'),
                            alignment=1, spaceAfter=2)
-    ts_d = ParagraphStyle('d', fontSize=7.5,textColor=colors.HexColor('#94a3b8'),
-                           alignment=1, spaceAfter=10)
+    ts_d = ParagraphStyle('d', fontSize=7.5, textColor=colors.HexColor('#94a3b8'),
+                           alignment=1, spaceAfter=8)
 
     judul = 'RIWAYAT PEMINJAMAN & PENGEMBALIAN — LAB TJKT'
-    if f_status: judul += f' | Filter: {f_status}'
+    if f_status: judul += f' | {f_status}'
+    if f_period: judul += f' | {period_label}'
     elems += [
         Paragraph(judul, ts_h),
         Paragraph('SMKN 1 Cikarang Selatan, Bekasi', ts_s),
-        Paragraph(f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")}', ts_d),
+        Paragraph(f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")} | Total: {len(rows)} data', ts_d),
         Spacer(1, 0.2*cm),
     ]
 
@@ -1319,12 +1567,9 @@ def peminjaman_export_pdf():
               'Kls/Jabatan','Jml','Waktu Pinjam','Rencana Kembali',
               'Waktu Kembali','Kond. Kembali','Status']
     data   = [header]
-
-    sfill_pdf = {
-        'Dipinjam':     colors.HexColor('#DBEAFE'),
-        'Dikembalikan': colors.HexColor('#D1FAE5'),
-        'Terlambat':    colors.HexColor('#FEE2E2'),
-    }
+    sfill  = {'Dipinjam': colors.HexColor('#DBEAFE'),
+               'Dikembalikan': colors.HexColor('#D1FAE5'),
+               'Terlambat': colors.HexColor('#FEE2E2')}
     ts_style = [
         ('BACKGROUND',    (0,0), (-1,0), navy),
         ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
@@ -1338,14 +1583,12 @@ def peminjaman_export_pdf():
         ('GRID',          (0,0), (-1,-1), 0.35, colors.HexColor('#CBD5E1')),
         ('TOPPADDING',    (0,0), (-1,-1), 4),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ('ALIGN',         (3,1), (4,-1), 'LEFT'),
+        ('ALIGN',         (2,1), (4,-1), 'LEFT'),
     ]
-
     for i, p in enumerate(rows, 1):
         data.append([
-            str(i),
-            p['kode_pinjam'],
-            p['nama_barang'] or '-',
+            str(i), p['kode_pinjam'],
+            p.get('nama_barang') or p.get('kode_barang') or '-',
             p['nama_peminjam'],
             p['kelas_jabatan'] or '-',
             str(p['jumlah_pinjam']),
@@ -1355,19 +1598,18 @@ def peminjaman_export_pdf():
             p['kondisi_kembali'] or '-',
             p['status'],
         ])
-        fc = sfill_pdf.get(p['status'])
+        fc = sfill.get(p['status'])
         if fc:
             ts_style.append(('BACKGROUND', (10, i), (10, i), fc))
             ts_style.append(('FONTNAME',   (10, i), (10, i), 'Helvetica-Bold'))
 
-    cw  = [0.7*cm,2.8*cm,4.2*cm,3.5*cm,2.2*cm,0.9*cm,2.4*cm,2.4*cm,2.4*cm,2.2*cm,2*cm]
+    cw  = [0.6*cm,2.6*cm,3.8*cm,3.2*cm,2*cm,0.8*cm,2.4*cm,2.4*cm,2.4*cm,2*cm,1.9*cm]
     tbl = Table(data, colWidths=cw, repeatRows=1)
     tbl.setStyle(TableStyle(ts_style))
     elems.append(tbl)
     doc.build(elems); buf.seek(0)
     fname = f"Peminjaman_TJKT_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    return send_file(buf, as_attachment=True, download_name=fname,
-                     mimetype='application/pdf')
+    return send_file(buf, as_attachment=True, download_name=fname, mimetype='application/pdf')
 
 
 # ============================================================
@@ -1380,10 +1622,15 @@ def consumable_riwayat_export_excel():
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
     f_tipe = request.args.get('tipe', '').strip()   # Masuk/Keluar/Koreksi
+    f_period = request.args.get('period', '').strip()
+
+    date_from, period_label = get_date_range(f_period)
 
     clauses, params = [], []
     if f_tipe:
         clauses.append("r.tipe_transaksi=%s"); params.append(f_tipe)
+    if date_from:
+        clauses.append("r.created_at >= %s"); params.append(date_from)
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     cur = mysql.connection.cursor()
@@ -1480,15 +1727,19 @@ def consumable_riwayat_export_pdf():
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
     from reportlab.lib.units import cm
-    from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle,
-                                     Paragraph, Spacer)
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-    f_tipe = request.args.get('tipe', '').strip()
+    f_tipe   = request.args.get('tipe',   '').strip()
+    f_period = request.args.get('period', '').strip()
+
+    date_from, period_label = get_date_range(f_period)
 
     clauses, params = [], []
     if f_tipe:
         clauses.append("r.tipe_transaksi=%s"); params.append(f_tipe)
+    if date_from:
+        clauses.append("r.created_at >= %s"); params.append(date_from)
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     cur = mysql.connection.cursor()
@@ -1502,34 +1753,30 @@ def consumable_riwayat_export_pdf():
     doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
                             leftMargin=1.2*cm, rightMargin=1.2*cm,
                             topMargin=1.8*cm, bottomMargin=1.2*cm)
-    styles = getSampleStyleSheet(); elems = []
-    green  = colors.HexColor('#065f46')
-
-    ts_h = ParagraphStyle('h', fontSize=13, textColor=green, alignment=1,
-                           fontName='Helvetica-Bold', spaceAfter=4)
-    ts_s = ParagraphStyle('s', fontSize=9,  textColor=colors.HexColor('#475569'),
+    elems = []; green = colors.HexColor('#065f46')
+    ts_h = ParagraphStyle('h', fontSize=12, textColor=green, alignment=1,
+                           fontName='Helvetica-Bold', spaceAfter=3)
+    ts_s = ParagraphStyle('s', fontSize=9, textColor=colors.HexColor('#475569'),
                            alignment=1, spaceAfter=2)
-    ts_d = ParagraphStyle('d', fontSize=7.5,textColor=colors.HexColor('#94a3b8'),
-                           alignment=1, spaceAfter=10)
+    ts_d = ParagraphStyle('d', fontSize=7.5, textColor=colors.HexColor('#94a3b8'),
+                           alignment=1, spaceAfter=8)
 
     judul = 'RIWAYAT PEMAKAIAN & RESTOCK BARANG HABIS PAKAI — LAB TJKT'
-    if f_tipe: judul += f' | Filter: {f_tipe}'
+    if f_tipe:   judul += f' | {f_tipe}'
+    if f_period: judul += f' | {period_label}'
     elems += [
         Paragraph(judul, ts_h),
         Paragraph('SMKN 1 Cikarang Selatan, Bekasi', ts_s),
-        Paragraph(f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")}', ts_d),
+        Paragraph(f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")} | Total: {len(rows)} data', ts_d),
         Spacer(1, 0.2*cm),
     ]
 
     header = ['No','Waktu','Nama Barang','Tipe','Jml','Sat.',
               'Sblm','Ssdh','Nama Pemakai','Kelas','Mata Pelajaran','Keterangan']
     data   = [header]
-
-    tfill_pdf = {
-        'Masuk':   colors.HexColor('#D1FAE5'),
-        'Keluar':  colors.HexColor('#FEE2E2'),
-        'Koreksi': colors.HexColor('#E0E7FF'),
-    }
+    tfill  = {'Masuk':   colors.HexColor('#D1FAE5'),
+               'Keluar':  colors.HexColor('#FEE2E2'),
+               'Koreksi': colors.HexColor('#E0E7FF')}
     ts_style = [
         ('BACKGROUND',    (0,0), (-1,0), green),
         ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
@@ -1546,12 +1793,11 @@ def consumable_riwayat_export_pdf():
         ('ALIGN',         (2,1), (2,-1), 'LEFT'),
         ('ALIGN',         (8,1), (11,-1), 'LEFT'),
     ]
-
     for i, r in enumerate(rows, 1):
         waktu = r['created_at'].strftime('%d/%m/%Y %H:%M') if r.get('created_at') else '-'
         data.append([
             str(i), waktu,
-            r['nama_barang'] or '-',
+            r.get('nama_barang') or '-',
             r['tipe_transaksi'],
             str(r['jumlah']),
             r.get('satuan') or '-',
@@ -1562,20 +1808,340 @@ def consumable_riwayat_export_pdf():
             r.get('mata_pelajaran') or '-',
             r.get('keterangan') or '-',
         ])
-        fc = tfill_pdf.get(r['tipe_transaksi'])
+        fc = tfill.get(r['tipe_transaksi'])
         if fc:
             ts_style.append(('BACKGROUND', (3, i), (3, i), fc))
             ts_style.append(('FONTNAME',   (3, i), (3, i), 'Helvetica-Bold'))
 
-    cw  = [0.7*cm,2.4*cm,4.5*cm,2*cm,0.9*cm,0.9*cm,
-           1.2*cm,1.2*cm,3.2*cm,2*cm,3*cm,3*cm]
+    cw = [0.6*cm,2.2*cm,4*cm,1.8*cm,0.8*cm,0.8*cm,
+          1.1*cm,1.1*cm,3*cm,1.8*cm,2.8*cm,2.8*cm]
     tbl = Table(data, colWidths=cw, repeatRows=1)
     tbl.setStyle(TableStyle(ts_style))
     elems.append(tbl)
     doc.build(elems); buf.seek(0)
     fname = f"RiwayatStok_TJKT_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    return send_file(buf, as_attachment=True, download_name=fname,
-                     mimetype='application/pdf')
+    return send_file(buf, as_attachment=True, download_name=fname, mimetype='application/pdf')
+
+
+# ============================================================
+# PENCARIAN GLOBAL
+# ============================================================
+@app.route('/search')
+@login_required
+def global_search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return redirect(url_for('dashboard'))
+
+    like = f"%{q}%"
+    cur  = mysql.connection.cursor()
+
+    # ── Inventaris Tetap ─────────────────────────────────────
+    cur.execute("""
+        SELECT id, kode_barang, nama_barang, kategori, tipe,
+               kondisi, jumlah, qr_path, 'inventaris' AS sumber
+        FROM barang
+        WHERE nama_barang LIKE %s OR kode_barang LIKE %s
+           OR tipe LIKE %s OR spesifikasi LIKE %s OR keterangan LIKE %s
+        ORDER BY nama_barang LIMIT 20
+    """, (like, like, like, like, like))
+    hasil_barang = cur.fetchall()
+
+    # ── Barang Habis Pakai ───────────────────────────────────
+    cur.execute("""
+        SELECT id, kode_barang, nama_barang, kategori, satuan,
+               stok_sekarang, stok_minimum, qr_path, 'consumable' AS sumber
+        FROM barang_habis_pakai
+        WHERE nama_barang LIKE %s OR kode_barang LIKE %s
+           OR kategori LIKE %s OR keterangan LIKE %s
+        ORDER BY nama_barang LIMIT 20
+    """, (like, like, like, like))
+    hasil_consumable = cur.fetchall()
+
+    # ── Peminjaman / Pemakaian ───────────────────────────────
+    cur.execute("""
+        SELECT p.id, p.kode_pinjam,
+               COALESCE(b.nama_barang, p.kode_barang) AS nama_barang,
+               p.nama_peminjam, p.kelas_jabatan, p.keperluan,
+               p.tgl_pinjam, p.tgl_kembali_aktual, p.status,
+               CASE WHEN p.barang_id IS NULL THEN 1 ELSE 0 END AS barang_dihapus
+        FROM peminjaman p
+        LEFT JOIN barang b ON p.barang_id = b.id
+        WHERE p.nama_peminjam LIKE %s OR p.kode_pinjam LIKE %s
+           OR b.nama_barang   LIKE %s OR p.kode_barang LIKE %s
+           OR p.kelas_jabatan LIKE %s OR p.keperluan   LIKE %s
+        ORDER BY p.created_at DESC LIMIT 20
+    """, (like, like, like, like, like, like))
+    hasil_pinjam = cur.fetchall()
+
+    # ── Riwayat Stok Consumable ──────────────────────────────
+    cur.execute("""
+        SELECT r.id, r.kode_barang, r.nama_barang,
+               r.tipe_transaksi, r.jumlah, r.stok_sesudah,
+               r.nama_pemakai, r.kelas, r.mata_pelajaran,
+               r.created_at, b.id AS barang_id_real
+        FROM riwayat_stok r
+        LEFT JOIN barang_habis_pakai b ON r.barang_id = b.id
+        WHERE r.nama_pemakai  LIKE %s OR r.kode_barang LIKE %s
+           OR r.nama_barang   LIKE %s OR r.kelas       LIKE %s
+           OR r.mata_pelajaran LIKE %s OR r.keterangan LIKE %s
+        ORDER BY r.created_at DESC LIMIT 10
+    """, (like, like, like, like, like, like))
+    hasil_stok = cur.fetchall()
+
+    cur.close()
+
+    total = (len(hasil_barang) + len(hasil_consumable)
+             + len(hasil_pinjam) + len(hasil_stok))
+
+    return render_template('search.html',
+        q=q, total=total,
+        hasil_barang=hasil_barang,
+        hasil_consumable=hasil_consumable,
+        hasil_pinjam=hasil_pinjam,
+        hasil_stok=hasil_stok,
+    )
+
+# ============================================================
+# UNIT BARANG — LIST (per barang induk)
+# ============================================================
+@app.route('/barang/<int:barang_id>/unit')
+@login_required
+def unit_list(barang_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM barang WHERE id=%s", (barang_id,))
+    barang = cur.fetchone()
+    if not barang:
+        flash('Barang tidak ditemukan.','danger')
+        return redirect(url_for('barang_list'))
+
+    cur.execute("""SELECT * FROM barang_unit
+                   WHERE barang_id=%s ORDER BY CAST(nomor_unit AS UNSIGNED)""",
+                (barang_id,))
+    units = cur.fetchall()
+
+    # Stats
+    cur.execute("SELECT COUNT(*) AS n FROM barang_unit WHERE barang_id=%s",(barang_id,))
+    total = cur.fetchone()['n']
+    cur.execute("SELECT COUNT(*) AS n FROM barang_unit WHERE barang_id=%s AND status='Tersedia'",(barang_id,))
+    tersedia = cur.fetchone()['n']
+    cur.execute("SELECT COUNT(*) AS n FROM barang_unit WHERE barang_id=%s AND kondisi='Rusak Berat'",(barang_id,))
+    rusak = cur.fetchone()['n']
+    cur.close()
+
+    return render_template('barang_unit.html',
+        barang=barang, units=units,
+        stats=dict(total=total, tersedia=tersedia,
+                   dipinjam=total-tersedia, rusak=rusak),
+    )
+
+# ============================================================
+# UNIT BARANG — TAMBAH
+# ============================================================
+@app.route('/barang/<int:barang_id>/unit/tambah', methods=['GET','POST'])
+@login_required
+def unit_tambah(barang_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM barang WHERE id=%s",(barang_id,))
+    barang = cur.fetchone()
+    if not barang:
+        flash('Barang tidak ditemukan.','danger')
+        return redirect(url_for('barang_list'))
+
+    if request.method == 'POST':
+        mode = request.form.get('mode','single')
+
+        if mode == 'bulk':
+            # Tambah banyak unit sekaligus (misal: 1 sampai 15)
+            dari  = int(request.form.get('dari', 1))
+            sampai= int(request.form.get('sampai', 1))
+            kondisi   = request.form.get('kondisi', 'Baik')
+            keterangan= request.form.get('keterangan','').strip()
+            added = 0; skipped = []
+            for n in range(dari, sampai + 1):
+                kode_unit = generate_kode_unit(barang['kode_barang'], n)
+                # Cek duplikat
+                cur.execute("SELECT id FROM barang_unit WHERE kode_unit=%s",(kode_unit,))
+                if cur.fetchone():
+                    skipped.append(str(n)); continue
+                qr = buat_qr_unit(kode_unit)
+                cur.execute("""INSERT INTO barang_unit
+                    (barang_id,kode_unit,nomor_unit,kondisi,qr_path,keterangan)
+                    VALUES(%s,%s,%s,%s,%s,%s)""",
+                    (barang_id,kode_unit,str(n),kondisi,qr,keterangan))
+                added += 1
+            # Aktifkan unit tracking di barang induk
+            cur.execute("UPDATE barang SET has_unit_tracking=TRUE WHERE id=%s",(barang_id,))
+            mysql.connection.commit(); cur.close()
+            msg = f'{added} unit berhasil ditambahkan.'
+            if skipped: msg += f' Dilewati (sudah ada): No. {", ".join(skipped)}.'
+            flash(msg, 'success' if added else 'warning')
+        else:
+            # Tambah satu unit
+            nomor     = request.form.get('nomor_unit','').strip()
+            label     = request.form.get('label_unit','').strip()
+            kondisi   = request.form.get('kondisi','Baik')
+            keterangan= request.form.get('keterangan','').strip()
+            kode_unit = generate_kode_unit(barang['kode_barang'], nomor)
+
+            cur.execute("SELECT id FROM barang_unit WHERE kode_unit=%s",(kode_unit,))
+            if cur.fetchone():
+                flash(f'Unit No. {nomor} sudah ada.','danger')
+                cur.close()
+                return redirect(url_for('unit_tambah', barang_id=barang_id))
+
+            qr = buat_qr_unit(kode_unit)
+            cur.execute("""INSERT INTO barang_unit
+                (barang_id,kode_unit,nomor_unit,label_unit,kondisi,qr_path,keterangan)
+                VALUES(%s,%s,%s,%s,%s,%s,%s)""",
+                (barang_id,kode_unit,nomor,label,kondisi,qr,keterangan))
+            cur.execute("UPDATE barang SET has_unit_tracking=TRUE WHERE id=%s",(barang_id,))
+            mysql.connection.commit(); cur.close()
+            flash(f'Unit No. {nomor} ({kode_unit}) berhasil ditambahkan.','success')
+
+        return redirect(url_for('unit_list', barang_id=barang_id))
+
+    cur.close()
+    return render_template('barang_unit_form.html', barang=barang, unit=None, mode='tambah')
+
+# ============================================================
+# UNIT BARANG — EDIT
+# ============================================================
+@app.route('/barang/<int:barang_id>/unit/<int:unit_id>/edit', methods=['GET','POST'])
+@login_required
+def unit_edit(barang_id, unit_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM barang WHERE id=%s",(barang_id,))
+    barang = cur.fetchone()
+    cur.execute("SELECT * FROM barang_unit WHERE id=%s AND barang_id=%s",(unit_id,barang_id))
+    unit = cur.fetchone()
+    if not barang or not unit:
+        flash('Data tidak ditemukan.','danger')
+        return redirect(url_for('barang_list'))
+
+    if request.method == 'POST':
+        label     = request.form.get('label_unit','').strip()
+        kondisi   = request.form.get('kondisi','Baik')
+        keterangan= request.form.get('keterangan','').strip()
+        cur.execute("""UPDATE barang_unit
+                       SET label_unit=%s, kondisi=%s, keterangan=%s
+                       WHERE id=%s""",
+                    (label, kondisi, keterangan, unit_id))
+        mysql.connection.commit(); cur.close()
+        flash(f'Unit No. {unit["nomor_unit"]} berhasil diperbarui.','success')
+        return redirect(url_for('unit_list', barang_id=barang_id))
+
+    cur.close()
+    return render_template('barang_unit_form.html', barang=barang, unit=unit, mode='edit')
+
+# ============================================================
+# UNIT BARANG — HAPUS
+# ============================================================
+@app.route('/barang/<int:barang_id>/unit/<int:unit_id>/hapus', methods=['POST'])
+@login_required
+def unit_hapus(barang_id, unit_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM barang_unit WHERE id=%s AND barang_id=%s",(unit_id,barang_id))
+    unit = cur.fetchone()
+    if unit:
+        # Hapus QR file
+        if unit.get('qr_path'):
+            f = os.path.join(app.static_folder, unit['qr_path'])
+            if os.path.exists(f): os.remove(f)
+        # Null-out referensi di peminjaman
+        cur.execute("UPDATE peminjaman SET unit_id=NULL WHERE unit_id=%s",(unit_id,))
+        cur.execute("DELETE FROM barang_unit WHERE id=%s",(unit_id,))
+        # Jika semua unit dihapus, matikan has_unit_tracking
+        cur.execute("SELECT COUNT(*) AS n FROM barang_unit WHERE barang_id=%s",(barang_id,))
+        if cur.fetchone()['n'] == 0:
+            cur.execute("UPDATE barang SET has_unit_tracking=FALSE WHERE id=%s",(barang_id,))
+        mysql.connection.commit()
+        flash(f'Unit No. {unit["nomor_unit"]} berhasil dihapus.','success')
+    cur.close()
+    return redirect(url_for('unit_list', barang_id=barang_id))
+
+# ============================================================
+# UNIT BARANG — DETAIL (target QR scan, publik)
+# ============================================================
+@app.route('/unit/detail/<kode_unit>')
+def unit_detail(kode_unit):
+    cur = mysql.connection.cursor()
+    cur.execute("""SELECT u.*, b.nama_barang, b.kategori, b.tipe,
+                          b.spesifikasi, b.kode_barang AS kode_induk,
+                          b.id AS barang_id_induk
+                   FROM barang_unit u
+                   JOIN barang b ON u.barang_id = b.id
+                   WHERE u.kode_unit=%s""", (kode_unit,))
+    unit = cur.fetchone()
+    if not unit:
+        return render_template('404.html'), 404
+
+    # Peminjaman aktif untuk unit ini
+    cur.execute("""SELECT p.id, p.kode_pinjam, p.nama_peminjam,
+                          p.kelas_jabatan, p.tgl_pinjam,
+                          p.tgl_kembali_rencana, p.status
+                   FROM peminjaman p
+                   WHERE p.unit_id=%s AND p.status IN ('Dipinjam','Terlambat')
+                   ORDER BY p.tgl_pinjam DESC LIMIT 1""", (unit['id'],))
+    peminjaman_aktif = cur.fetchone()
+
+    # Riwayat peminjaman unit ini (10 terakhir)
+    cur.execute("""SELECT p.kode_pinjam, p.nama_peminjam, p.kelas_jabatan,
+                          p.tgl_pinjam, p.tgl_kembali_aktual, p.status, p.kondisi_kembali
+                   FROM peminjaman p
+                   WHERE p.unit_id=%s
+                   ORDER BY p.tgl_pinjam DESC LIMIT 10""", (unit['id'],))
+    riwayat = cur.fetchall()
+    cur.close()
+
+    return render_template('detail_unit.html',
+        unit=unit, peminjaman_aktif=peminjaman_aktif, riwayat=riwayat)
+
+# ============================================================
+# UNIT BARANG — API (untuk scanner)
+# ============================================================
+@app.route('/api/unit/<kode_unit>')
+def api_unit(kode_unit):
+    cur = mysql.connection.cursor()
+    cur.execute("""SELECT u.*, b.nama_barang, b.kategori, b.tipe, b.kode_barang AS kode_induk
+                   FROM barang_unit u JOIN barang b ON u.barang_id=b.id
+                   WHERE u.kode_unit=%s""", (kode_unit,))
+    u = cur.fetchone()
+    if u:
+        for k in ('created_at','updated_at'):
+            if u.get(k): u[k] = str(u[k])
+        # Cek peminjaman aktif
+        cur.execute("""SELECT id, kode_pinjam, nama_peminjam, kelas_jabatan,
+                              status, tgl_pinjam, tgl_kembali_rencana
+                       FROM peminjaman WHERE unit_id=%s
+                       AND status IN ('Dipinjam','Terlambat')
+                       ORDER BY tgl_pinjam DESC LIMIT 1""", (u['id'],))
+        p = cur.fetchone()
+        cur.close()
+        if p:
+            for k in ('tgl_pinjam','tgl_kembali_rencana'):
+                if p.get(k): p[k] = p[k].strftime('%d %b %Y, %H:%M')
+            u['peminjaman_aktif'] = p
+        else:
+            u['peminjaman_aktif'] = None
+        return jsonify({'status':'found','tipe':'unit','data':u})
+    cur.close()
+    return jsonify({'status':'not_found'}), 404
+
+# ============================================================
+# UNIT BARANG — CETAK LABEL (semua unit dalam satu halaman)
+# ============================================================
+@app.route('/barang/<int:barang_id>/unit/cetak-label')
+@login_required
+def unit_cetak_label(barang_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM barang WHERE id=%s",(barang_id,))
+    barang = cur.fetchone()
+    cur.execute("""SELECT * FROM barang_unit WHERE barang_id=%s
+                   AND qr_path IS NOT NULL
+                   ORDER BY CAST(nomor_unit AS UNSIGNED)""", (barang_id,))
+    units = cur.fetchall(); cur.close()
+    return render_template('unit_cetak_label.html', barang=barang, units=units)
 
 # ============================================================
 # ABOUT — Halaman Tentang Sistem
@@ -1584,6 +2150,322 @@ def consumable_riwayat_export_pdf():
 @login_required
 def about():
     return render_template('about.html')
+
+# ============================================================
+# RIWAYAT PEMAKAIAN INVENTARIS TETAP
+# Menampilkan gabungan: peminjaman + scan QR sebagai riwayat pemakaian
+# ============================================================
+@app.route('/barang/riwayat')
+@login_required
+def barang_riwayat():
+    f_status = request.args.get('status', '').strip()
+    f_period = request.args.get('period', '').strip()
+    search   = request.args.get('search', '').strip()
+    page     = int(request.args.get('page', 1))
+    per_page = 15; offset = (page-1)*per_page
+
+    date_from, period_label = get_date_range(f_period)
+
+    clauses, params = [], []
+    if search:
+        like = f"%{search}%"
+        clauses.append(
+            "(p.nama_peminjam LIKE %s OR p.kode_pinjam LIKE %s "
+            " OR COALESCE(b.nama_barang, p.kode_barang) LIKE %s)"
+        )
+        params += [like, like, like]
+    if f_status:
+        clauses.append("p.status=%s"); params.append(f_status)
+    if date_from:
+        clauses.append("p.tgl_pinjam >= %s"); params.append(date_from)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    cur = mysql.connection.cursor()
+    cur.execute(f"""
+        SELECT
+            p.id, p.kode_pinjam, p.kode_barang,
+            COALESCE(b.nama_barang, p.kode_barang) AS nama_barang,
+            COALESCE(b.kategori,    '(barang dihapus)') AS kategori,
+            COALESCE(b.tipe,        '') AS tipe,
+            p.nama_peminjam, p.kelas_jabatan, p.jumlah_pinjam,
+            p.tgl_pinjam, p.tgl_kembali_rencana, p.tgl_kembali_aktual,
+            p.status, p.kondisi_kembali, p.keperluan,
+            CASE WHEN p.barang_id IS NULL THEN 1 ELSE 0 END AS barang_dihapus
+        FROM peminjaman p
+        LEFT JOIN barang b ON p.barang_id = b.id
+        {where}
+        ORDER BY p.tgl_pinjam DESC
+        LIMIT %s OFFSET %s
+    """, params + [per_page, offset])
+    rows = cur.fetchall()
+
+    cur.execute(f"""SELECT COUNT(*) AS n FROM peminjaman p
+        LEFT JOIN barang b ON p.barang_id = b.id {where}
+    """, params)
+    total = cur.fetchone()['n']
+
+    # Stats mengikuti filter periode yang aktif
+    sp = [date_from] if date_from else []
+    sw = "WHERE p.tgl_pinjam >= %s" if date_from else ""
+    cur.execute(f"SELECT COUNT(*) AS n FROM peminjaman p {sw}", sp)
+    s_total = cur.fetchone()['n']
+    cur.execute(f"SELECT COUNT(*) AS n FROM peminjaman p {sw}" +
+               (" AND " if sw else " WHERE ") + "p.status='Dipinjam'", sp)
+    s_aktif = cur.fetchone()['n']
+    cur.execute(f"SELECT COUNT(*) AS n FROM peminjaman p {sw}" +
+               (" AND " if sw else " WHERE ") + "p.status='Dikembalikan'", sp)
+    s_kembali = cur.fetchone()['n']
+    cur.execute(f"SELECT COUNT(*) AS n FROM peminjaman p {sw}" +
+               (" AND " if sw else " WHERE ") + "p.status='Terlambat'", sp)
+    s_terlambat = cur.fetchone()['n']
+    cur.close()
+
+    return render_template('barang_riwayat.html',
+        rows=rows, search=search, f_status=f_status,
+        f_period=f_period, period_label=period_label,
+        page=page, total_pages=max(1,(total+per_page-1)//per_page),
+        total_rows=total,
+        stats=dict(total=s_total, aktif=s_aktif,
+                   kembali=s_kembali, terlambat=s_terlambat),
+        PERIOD_LABELS=PERIOD_LABELS,
+    )
+
+
+# ============================================================
+# RIWAYAT PEMAKAIAN INVENTARIS — EXPORT EXCEL
+# ============================================================
+@app.route('/barang/riwayat/export/excel')
+@login_required
+def barang_riwayat_export_excel():
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    f_status = request.args.get('status', '').strip()
+    f_period = request.args.get('period', '').strip()
+
+    date_from, period_label = get_date_range(f_period)
+    search   = request.args.get('search', '').strip()
+
+    clauses, params = [], []
+    if search:
+        like = f"%{search}%"
+        clauses.append(
+            "(p.nama_peminjam LIKE %s OR p.kode_pinjam LIKE %s "
+            " OR COALESCE(b.nama_barang, p.kode_barang) LIKE %s)"
+        )
+        params += [like, like, like]
+    if f_status:
+        clauses.append("p.status=%s"); params.append(f_status)
+    if date_from:
+        clauses.append("p.tgl_pinjam >= %s"); params.append(date_from)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    cur = mysql.connection.cursor()
+    cur.execute(f"""
+        SELECT
+            p.*,
+            COALESCE(b.nama_barang, p.kode_barang) AS nama_barang_display,
+            COALESCE(b.tipe, '') AS tipe_display
+        FROM peminjaman p
+        LEFT JOIN barang b ON p.barang_id = b.id
+        {where}
+        ORDER BY p.created_at DESC
+    """, params)
+    rows = cur.fetchall(); cur.close()
+
+    wb  = openpyxl.Workbook(); ws = wb.active
+    ws.title = "Riwayat Pemakaian Inventaris"
+
+    hfill  = PatternFill("solid", fgColor="1e3a8a")
+    hfont  = Font(name='Calibri', bold=True, color="FFFFFF", size=11)
+    center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    left   = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    thin   = Side(style='thin', color='CBD5E1')
+    bdr    = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws.merge_cells('A1:M1')
+    ws['A1'] = 'RIWAYAT PEMAKAIAN INVENTARIS — LAB TJKT SMKN 1 Cikarang Selatan'
+    ws['A1'].font      = Font(name='Calibri', bold=True, size=14, color="1e3a8a")
+    ws['A1'].alignment = center
+
+    ws.merge_cells('A2:M2')
+    label = f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")}'
+    if f_status: label += f'  |  Status: {f_status}'
+    if f_period: label += f'  |  Periode: {period_label}'
+    ws['A2'] = label
+    ws['A2'].font      = Font(name='Calibri', size=10, italic=True, color="94a3b8")
+    ws['A2'].alignment = center
+    ws.row_dimensions[1].height = 28
+    ws.row_dimensions[2].height = 16
+
+    headers = ['No','Kode Pinjam','Nama Barang','Tipe','Nama Peminjam',
+               'Kelas/Jabatan','Keperluan','Jml','Waktu Pinjam',
+               'Rencana Kembali','Waktu Kembali','Kondisi Kembali','Status']
+    widths  = [5, 20, 28, 16, 22, 14, 24, 6, 20, 20, 20, 14, 13]
+
+    ws.append([]); ws.append(headers)
+    for ci, (h, w) in enumerate(zip(headers, widths), 1):
+        cell = ws.cell(row=4, column=ci)
+        cell.fill = hfill; cell.font = hfont
+        cell.alignment = center; cell.border = bdr
+        ws.column_dimensions[cell.column_letter].width = w
+    ws.row_dimensions[4].height = 22
+
+    sfill = {'Dipinjam':'DBEAFE','Dikembalikan':'D1FAE5','Terlambat':'FEE2E2'}
+
+    def fmt_dt(val):
+        if not val: return '-'
+        try: return val.strftime('%d/%m/%Y %H:%M')
+        except: return str(val)
+
+    for i, p in enumerate(rows, 1):
+        ws.append([
+            i, p['kode_pinjam'],
+            p.get('nama_barang_display') or p['kode_barang'],
+            p.get('tipe_display') or '-',
+            p['nama_peminjam'],
+            p['kelas_jabatan'] or '-',
+            p['keperluan'] or '-',
+            p['jumlah_pinjam'],
+            fmt_dt(p['tgl_pinjam']),
+            fmt_dt(p['tgl_kembali_rencana']),
+            fmt_dt(p['tgl_kembali_aktual']),
+            p['kondisi_kembali'] or '-',
+            p['status'],
+        ])
+        rn = 4 + i; ws.row_dimensions[rn].height = 18
+        for ci in range(1, 14):
+            cell = ws.cell(row=rn, column=ci)
+            cell.border = bdr
+            cell.alignment = center if ci in (1, 8) else left
+        sc = ws.cell(row=rn, column=13)
+        fc = sfill.get(p['status'])
+        if fc:
+            sc.fill = PatternFill("solid", fgColor=fc)
+            sc.font = Font(name='Calibri', bold=True, size=10)
+            sc.alignment = center
+
+    ws.freeze_panes = 'A5'
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    fname = f"RiwayatPemakaian_TJKT_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=fname,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+# ============================================================
+# RIWAYAT PEMAKAIAN INVENTARIS — EXPORT PDF
+# ============================================================
+@app.route('/barang/riwayat/export/pdf')
+@login_required
+def barang_riwayat_export_pdf():
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+    f_status = request.args.get('status', '').strip()
+    search   = request.args.get('search', '').strip()
+
+    clauses, params = [], []
+    if search:
+        like = f"%{search}%"
+        clauses.append(
+            "(p.nama_peminjam LIKE %s OR p.kode_pinjam LIKE %s "
+            " OR COALESCE(b.nama_barang, p.kode_barang) LIKE %s)"
+        )
+        params += [like, like, like]
+    if f_status:
+        clauses.append("p.status=%s"); params.append(f_status)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    cur = mysql.connection.cursor()
+    cur.execute(f"""
+        SELECT p.*,
+            COALESCE(b.nama_barang, p.kode_barang) AS nama_barang_display,
+            COALESCE(b.tipe, '') AS tipe_display
+        FROM peminjaman p
+        LEFT JOIN barang b ON p.barang_id = b.id
+        {where} ORDER BY p.created_at DESC
+    """, params)
+    rows = cur.fetchall(); cur.close()
+
+    def fmt_dt(val):
+        if not val: return '-'
+        try: return val.strftime('%d/%m/%Y %H:%M')
+        except: return str(val)
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=landscape(A4),
+                            leftMargin=1.2*cm, rightMargin=1.2*cm,
+                            topMargin=1.8*cm, bottomMargin=1.2*cm)
+    styles = getSampleStyleSheet(); elems = []
+    navy = colors.HexColor('#1e3a8a')
+
+    ts_h = ParagraphStyle('h', fontSize=13, textColor=navy, alignment=1,
+                           fontName='Helvetica-Bold', spaceAfter=4)
+    ts_s = ParagraphStyle('s', fontSize=9, textColor=colors.HexColor('#475569'),
+                           alignment=1, spaceAfter=2)
+    ts_d = ParagraphStyle('d', fontSize=7.5, textColor=colors.HexColor('#94a3b8'),
+                           alignment=1, spaceAfter=10)
+
+    judul = 'RIWAYAT PEMAKAIAN INVENTARIS — LAB TJKT'
+    if f_status: judul += f' | Filter: {f_status}'
+    elems += [
+        Paragraph(judul, ts_h),
+        Paragraph('SMKN 1 Cikarang Selatan, Bekasi', ts_s),
+        Paragraph(f'Dicetak: {datetime.now().strftime("%d %B %Y %H:%M")}', ts_d),
+        Spacer(1, 0.2*cm),
+    ]
+
+    header = ['No','Kode','Nama Barang','Peminjam','Kls/Jab',
+              'Jml','Waktu Pinjam','Rencana Kembali','Kembali Aktual','Status']
+    data   = [header]
+    sfill_pdf = {
+        'Dipinjam':     colors.HexColor('#DBEAFE'),
+        'Dikembalikan': colors.HexColor('#D1FAE5'),
+        'Terlambat':    colors.HexColor('#FEE2E2'),
+    }
+    ts_style = [
+        ('BACKGROUND',    (0,0), (-1,0), navy),
+        ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
+        ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,0), 8),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTSIZE',      (0,1), (-1,-1), 7.5),
+        ('FONTNAME',      (0,1), (-1,-1), 'Helvetica'),
+        ('ROWBACKGROUNDS',(0,1), (-1,-1), [colors.white, colors.HexColor('#EFF6FF')]),
+        ('GRID',          (0,0), (-1,-1), 0.35, colors.HexColor('#CBD5E1')),
+        ('TOPPADDING',    (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('ALIGN',         (2,1), (4,-1), 'LEFT'),
+    ]
+
+    for i, p in enumerate(rows, 1):
+        data.append([
+            str(i), p['kode_pinjam'],
+            p.get('nama_barang_display') or p['kode_barang'],
+            p['nama_peminjam'],
+            p['kelas_jabatan'] or '-',
+            str(p['jumlah_pinjam']),
+            fmt_dt(p['tgl_pinjam']),
+            fmt_dt(p['tgl_kembali_rencana']),
+            fmt_dt(p['tgl_kembali_aktual']),
+            p['status'],
+        ])
+        fc = sfill_pdf.get(p['status'])
+        if fc:
+            ts_style.append(('BACKGROUND', (9, i), (9, i), fc))
+            ts_style.append(('FONTNAME',   (9, i), (9, i), 'Helvetica-Bold'))
+
+    cw  = [0.7*cm,2.8*cm,4.5*cm,3.5*cm,2.2*cm,0.9*cm,2.8*cm,2.8*cm,2.8*cm,2.2*cm]
+    tbl = Table(data, colWidths=cw, repeatRows=1)
+    tbl.setStyle(TableStyle(ts_style))
+    elems.append(tbl)
+    doc.build(elems); buf.seek(0)
+    fname = f"RiwayatPemakaian_TJKT_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return send_file(buf, as_attachment=True, download_name=fname,
+                     mimetype='application/pdf')
 
 # ============================================================
 # AUTO-REGENERATE QR — jalan otomatis saat request pertama

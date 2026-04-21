@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Unit — {{ barang.nama_barang }}{% endblock %}
+{% block page_title %}Manajemen Unit Barang{% endblock %}
+
+{% block content %}
+<!-- Header Barang Induk -->
+<div class="card-panel mb-4">
+  <div class="panel-header">
+    <div>
+      <h6 class="panel-title mb-0">
+        <i class="bi bi-list-ol me-2 text-primary"></i>{{ barang.nama_barang }}
+      </h6>
+      <code class="text-muted" style="font-size:.75rem;">{{ barang.kode_barang }}</code>
+      <span class="ms-2 text-muted small">· {{ barang.kategori }}</span>
+      {% if barang.tipe %}<span class="text-muted small"> · {{ barang.tipe }}</span>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('unit_cetak_label', barang_id=barang.id) }}"
+         class="btn-outline-custom" target="_blank">
+        <i class="bi bi-printer me-1"></i>Cetak Label
+      </a>
+      <a href="{{ url_for('unit_tambah', barang_id=barang.id) }}"
+         class="btn-primary-custom">
+        <i class="bi bi-plus-lg me-1"></i>Tambah Unit
+      </a>
+      <a href="{{ url_for('barang_list') }}" class="btn-outline-custom">
+        <i class="bi bi-arrow-left me-1"></i>Kembali
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-list-ol"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total Unit</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-list-ol"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-baik">
+      <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.tersedia }}</div><div class="stat-label">Tersedia</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-total" style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">
+      <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.dipinjam }}</div><div class="stat-label">Dipinjam</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-left-right"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-rusak-berat">
+      <div class="stat-icon"><i class="bi bi-x-octagon-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.rusak }}</div><div class="stat-label">Rusak Berat</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-x-octagon-fill"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Daftar Unit -->
+<div class="card-panel">
+  <div class="panel-header">
+    <h6 class="panel-title"><i class="bi bi-grid me-2"></i>Daftar Unit</h6>
+  </div>
+  <div class="panel-body p-0">
+    {% if units %}
+    <div class="unit-grid">
+      {% for u in units %}
+      <div class="unit-card {% if u.status=='Dipinjam' %}unit-dipinjam{% elif u.kondisi=='Rusak Berat' %}unit-rusak{% endif %}">
+        <!-- Header unit -->
+        <div class="unit-card-header">
+          <div class="unit-nomor">No. {{ u.nomor_unit }}</div>
+          <div class="d-flex gap-1">
+            {% if u.kondisi == 'Baik' %}
+              <span class="badge-kondisi kondisi-baik" style="font-size:.65rem;padding:2px 8px;">Baik</span>
+            {% elif u.kondisi == 'Rusak Ringan' %}
+              <span class="badge-kondisi kondisi-ringan" style="font-size:.65rem;padding:2px 8px;">Rusak Ringan</span>
+            {% else %}
+              <span class="badge-kondisi kondisi-berat" style="font-size:.65rem;padding:2px 8px;">Rusak Berat</span>
+            {% endif %}
+            <span class="badge-kondisi {% if u.status=='Dipinjam' %}kondisi-ringan{% else %}kondisi-baik{% endif %}"
+                  style="font-size:.65rem;padding:2px 8px;">{{ u.status }}</span>
+          </div>
+        </div>
+
+        <!-- QR -->
+        {% if u.qr_path %}
+        <div class="unit-qr-wrap">
+          <img src="{{ url_for('static', filename=u.qr_path) }}"
+               alt="QR" class="unit-qr-img"
+               onclick="window.open('{{ url_for('unit_detail', kode_unit=u.kode_unit) }}','_blank')"/>
+        </div>
+        {% endif %}
+
+        <!-- Info -->
+        <div class="unit-info">
+          <code class="unit-kode">{{ u.kode_unit }}</code>
+          {% if u.label_unit %}
+          <div class="unit-label">{{ u.label_unit }}</div>
+          {% endif %}
+          {% if u.keterangan %}
+          <div class="unit-ket">{{ u.keterangan }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Aksi -->
+        <div class="unit-actions">
+          <a href="{{ url_for('unit_detail', kode_unit=u.kode_unit) }}"
+             class="btn-action btn-detail" title="Detail" target="_blank">
+            <i class="bi bi-eye"></i>
+          </a>
+          <a href="{{ url_for('unit_edit', barang_id=barang.id, unit_id=u.id) }}"
+             class="btn-action btn-edit" title="Edit">
+            <i class="bi bi-pencil"></i>
+          </a>
+          {% if u.status == 'Tersedia' %}
+          <a href="{{ url_for('peminjaman_tambah') }}?barang_id={{ barang.id }}&unit_id={{ u.id }}"
+             class="btn-action" title="Pinjam unit ini"
+             style="background:#eef1fd;color:#4361ee;">
+            <i class="bi bi-arrow-left-right"></i>
+          </a>
+          {% endif %}
+          <form method="POST"
+                action="{{ url_for('unit_hapus', barang_id=barang.id, unit_id=u.id) }}"
+                onsubmit="return confirm('Hapus Unit No. {{ u.nomor_unit }}?');"
+                style="display:inline;">
+            <button type="submit" class="btn-action btn-delete" title="Hapus">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-list-ol display-5 d-block mb-3"></i>
+      <h6>Belum ada unit terdaftar</h6>
+      <p class="small">Klik "Tambah Unit" untuk mulai mendaftarkan unit fisik barang ini.</p>
+      <a href="{{ url_for('unit_tambah', barang_id=barang.id) }}" class="btn-primary-custom mt-2">
+        <i class="bi bi-plus-lg me-1"></i>Tambah Unit Sekarang
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Pemakaian Inventaris{% endblock %}
+{% block page_title %}Riwayat Pemakaian Inventaris{% endblock %}
+
+{% block content %}
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-total">
+      <div class="stat-icon"><i class="bi bi-journal-text"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.total }}</div><div class="stat-label">Total Riwayat</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-journal-text"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-total" style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">
+      <div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.aktif }}</div><div class="stat-label">Sedang Dipinjam</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-arrow-left-right"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-baik">
+      <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.kembali }}</div><div class="stat-label">Dikembalikan</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-check-circle-fill"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-rusak-berat">
+      <div class="stat-icon"><i class="bi bi-alarm-fill"></i></div>
+      <div class="stat-body"><div class="stat-value">{{ stats.terlambat }}</div><div class="stat-label">Terlambat</div></div>
+      <div class="stat-bg-icon"><i class="bi bi-alarm-fill"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="card-panel">
+  <div class="panel-header">
+    <h6 class="panel-title">
+      <i class="bi bi-journal-text me-2"></i>Riwayat Pemakaian Barang Inventaris
+    </h6>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('barang_riwayat_export_excel') }}?status={{ f_status }}&search={{ search }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#1e3a8a;border-color:#1e3a8a;" target="_blank">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      </a>
+      <a href="{{ url_for('barang_riwayat_export_pdf') }}?status={{ f_status }}&search={{ search }}"
+         class="btn-outline-custom btn-sm-custom"
+         style="color:#dc2626;border-color:#dc2626;" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      <a href="{{ url_for('peminjaman_list') }}" class="btn-outline-custom">
+        <i class="bi bi-arrow-left me-1"></i>Kembali
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="panel-toolbar">
+<form method="GET" action="{{ url_for('barang_riwayat') }}" class="filter-form">
+      <div class="input-icon-wrap" style="min-width:220px;">
+        <i class="bi bi-search input-icon"></i>
+        <input type="text" name="search" class="form-control form-control-search"
+               placeholder="Cari nama barang, peminjam, kode..." value="{{ search }}"/>
+      </div>
+      <select name="status" class="form-select filter-select">
+        <option value="">Semua Status</option>
+        <option value="Dipinjam"     {% if f_status=='Dipinjam' %}selected{% endif %}>Dipinjam</option>
+        <option value="Dikembalikan" {% if f_status=='Dikembalikan' %}selected{% endif %}>Dikembalikan</option>
+        <option value="Terlambat"    {% if f_status=='Terlambat' %}selected{% endif %}>Terlambat</option>
+      </select>
+      <button type="submit" class="btn-search">Cari</button>
+      {% if search or f_status or f_periode %}
+        <a href="{{ url_for('barang_riwayat') }}" class="btn-reset">Reset</a>
+      {% endif %}
+    </form>
+    <div class="table-info ms-auto"><strong>{{ total_rows }}</strong> riwayat</div>
+  </div>
+
+  <!-- Table -->
+  <div class="panel-body p-0">
+    <div class="table-responsive">
+      <table class="table table-custom mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Kode Pinjam</th>
+            <th>Nama Barang</th>
+            <th>Peminjam</th>
+            <th>Keperluan</th>
+            <th>Jml</th>
+            <th>Waktu Pinjam</th>
+            <th>Waktu Kembali</th>
+            <th>Kondisi</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set offset = (page-1)*15 %}
+          {% for r in rows %}
+          <tr class="{% if r.status=='Terlambat' %}tr-terlambat{% endif %}">
+            <td class="text-muted">{{ offset + loop.index }}</td>
+            <td><code class="kode-text">{{ r.kode_pinjam }}</code></td>
+            <td>
+              <div class="fw-600">{{ r.nama_barang }}</div>
+              {% if r.tipe %}<small class="text-muted">{{ r.tipe }}</small>{% endif %}
+              {% if r.barang_dihapus %}
+                <span class="ms-1" title="Barang ini sudah dihapus dari inventaris"
+                      style="font-size:.68rem;background:#fef3c7;color:#92400e;
+                             padding:1px 6px;border-radius:10px;font-weight:600;">
+                  dihapus
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="fw-600">{{ r.nama_peminjam }}</div>
+              {% if r.kelas_jabatan %}
+                <small class="text-muted">{{ r.kelas_jabatan }}</small>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ r.keperluan or '—' }}</td>
+            <td class="text-center fw-600">{{ r.jumlah_pinjam }}</td>
+            <td>
+              {% if r.tgl_pinjam %}
+                <div class="small fw-600">{{ r.tgl_pinjam.strftime('%d/%m/%Y') }}</div>
+                <div class="text-muted" style="font-size:.72rem;">
+                  {{ r.tgl_pinjam.strftime('%H:%M') }} WIB
+                </div>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if r.tgl_kembali_aktual %}
+                <div class="small fw-600">{{ r.tgl_kembali_aktual.strftime('%d/%m/%Y') }}</div>
+                <div class="text-muted" style="font-size:.72rem;">
+                  {{ r.tgl_kembali_aktual.strftime('%H:%M') }} WIB
+                </div>
+              {% elif r.tgl_kembali_rencana %}
+                <div class="small text-muted">Rencana:</div>
+                <div class="small {% if r.status=='Terlambat' %}text-danger fw-700{% endif %}">
+                  {{ r.tgl_kembali_rencana.strftime('%d/%m %H:%M') }}
+                </div>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if r.kondisi_kembali == 'Baik' %}
+                <span class="badge-kondisi kondisi-baik">{{ r.kondisi_kembali }}</span>
+              {% elif r.kondisi_kembali == 'Rusak Ringan' %}
+                <span class="badge-kondisi kondisi-ringan">{{ r.kondisi_kembali }}</span>
+              {% elif r.kondisi_kembali == 'Rusak Berat' %}
+                <span class="badge-kondisi kondisi-berat">{{ r.kondisi_kembali }}</span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.status == 'Dipinjam' %}
+                <span class="badge-status status-dipinjam">Dipinjam</span>
+              {% elif r.status == 'Dikembalikan' %}
+                <span class="badge-status status-kembali">Dikembalikan</span>
+              {% else %}
+                <span class="badge-status status-terlambat">Terlambat</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-5">
+              <i class="bi bi-journal-x display-6 d-block mb-2"></i>
+              Belum ada riwayat pemakaian inventaris
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="panel-footer">
+    <nav><ul class="pagination-custom">
+      <li class="{% if page==1 %}disabled{% endif %}">
+        <a href="?page={{ page-1 }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+      {% for p in range(1, total_pages+1) %}
+      <li class="{% if p==page %}active{% endif %}">
+      <li class="{% if p==page %}active{% endif %}"><a href="?page={{ p }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}">{{ p }}</a></li>
+      {% endfor %}
+      <li class="{% if page==total_pages %}disabled{% endif %}">
+        <a href="?page={{ page+1 }}&search={{ search }}&status={{ f_status }}&periode={{ f_periode }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+    </ul></nav>
+  </div>
+  {% endif %}
+
+  <!-- Keterangan badge "dihapus" -->
+  <div class="panel-footer" style="justify-content:flex-start;">
+    <span style="font-size:.78rem;color:#94a3b8;">
+      <span style="background:#fef3c7;color:#92400e;padding:1px 6px;
+                   border-radius:10px;font-weight:600;font-size:.7rem;">dihapus</span>
+      = barang sudah tidak ada di inventaris, namun riwayat pemakaiannya tetap tersimpan
+    </span>
+  </div>
+</div>
+{% endblock %}

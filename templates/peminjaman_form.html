@@ -19,19 +19,32 @@
           <div class="mb-3">
             <label class="form-label-custom required">Pilih Barang</label>
             <select name="barang_id" id="selectBarang" class="form-select form-control-custom"
-                    required onchange="updateInfoBarang()">
+                    required onchange="updateInfoBarang(); updateUnitSelector();">
               <option value="">— Pilih barang yang akan dipinjam —</option>
               {% for b in barang_tersedia %}
               <option value="{{ b.id }}"
                       data-nama="{{ b.nama_barang }}"
                       data-kode="{{ b.kode_barang }}"
                       data-tipe="{{ b.tipe or b.kategori }}"
-                      data-jumlah="{{ b.jumlah }}">
-                [{{ b.kode_barang }}] {{ b.nama_barang }} — {{ b.tipe or b.kategori }} 
+                      data-jumlah="{{ b.jumlah }}"
+                      {% if preselect_id and preselect_id|string == b.id|string %}selected{% endif %}>
+                [{{ b.kode_barang }}] {{ b.nama_barang }} — {{ b.tipe or b.kategori }} (stok: {{ b.jumlah }})
               </option>
               {% endfor %}
             </select>
           </div>
+
+          <!-- Banner preselect dari scan QR -->
+          {% if preselect_id %}
+          <div class="preselect-banner mb-3" id="preselectBanner">
+            <div class="preselect-icon"><i class="bi bi-qr-code-scan"></i></div>
+            <div class="preselect-text">
+              <div class="preselect-label">Barang dari hasil scan QR</div>
+              <div class="preselect-nama" id="preselectNama">Memuat...</div>
+            </div>
+            <i class="bi bi-check-circle-fill preselect-check"></i>
+          </div>
+          {% endif %}
 
           <!-- Info barang -->
           <div class="info-box mb-4" id="infoBarang" style="display:none;">
@@ -39,8 +52,20 @@
             <span id="infoText"></span>
           </div>
 
-          <!-- Jumlah -->
-          <div class="mb-4">
+          <!-- Pilih Unit (tampil jika barang pakai unit tracking) -->
+          <div class="mb-3" id="unitSelectorWrap" style="display:none;">
+            <label class="form-label-custom required">Pilih Nomor Unit</label>
+            <select name="unit_id" id="selectUnit" class="form-select form-control-custom">
+              <option value="">— Pilih nomor unit —</option>
+            </select>
+            <div class="form-text text-muted small mt-1">
+              <i class="bi bi-info-circle me-1"></i>
+              Hanya unit dengan status Tersedia yang ditampilkan
+            </div>
+          </div>
+
+          <!-- Jumlah (hanya tampil jika tidak pakai unit tracking) -->
+          <div class="mb-4" id="jumlahWrap">
             <label class="form-label-custom required">Jumlah Dipinjam</label>
             <input type="number" name="jumlah_pinjam" id="jumlahPinjam"
                    class="form-control form-control-custom" style="max-width:160px;"
@@ -142,7 +167,7 @@
             <div class="col-md-3">
               <label class="form-label-custom">Kelas / Jabatan</label>
               <input type="text" name="kelas_jabatan" class="form-control form-control-custom"
-                     placeholder="XII TJKT A"/>
+                     placeholder="XII TKJ 1"/>
             </div>
             <div class="col-md-4">
               <label class="form-label-custom">No. HP</label>
@@ -263,6 +288,79 @@ function updatePreview() {
 }
 updatePreview();
 
+// ── Data unit per barang ─────────────────────────────────
+const UNITS_PER_BARANG = {{ units_per_barang | tojson }};
+const PRESELECT_UNIT   = "{{ preselect_unit }}";
+
+function updateUnitSelector() {
+  const barangId = document.getElementById('selectBarang').value;
+  const unitWrap = document.getElementById('unitSelectorWrap');
+  const jmlWrap  = document.getElementById('jumlahWrap');
+  const selUnit  = document.getElementById('selectUnit');
+  const jmlInput = document.getElementById('jumlahPinjam');
+
+  const units = UNITS_PER_BARANG[String(barangId)] || [];
+
+  if (units.length > 0) {
+    // Barang pakai unit tracking — tampilkan selector unit
+    selUnit.innerHTML = '<option value="">— Pilih nomor unit —</option>';
+    units.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value       = u.id;
+      opt.textContent = `No. ${u.nomor_unit}${u.label_unit?' · '+u.label_unit:''}  [${u.kode_unit}]  (${u.kondisi})`;
+      if (PRESELECT_UNIT && String(u.id) === PRESELECT_UNIT) opt.selected = true;
+      selUnit.appendChild(opt);
+    });
+    unitWrap.style.display = 'block';
+    jmlWrap.style.display  = 'none';
+    selUnit.required       = true;
+    jmlInput.required      = false;
+    jmlInput.value         = 1;
+  } else {
+    // Barang tidak pakai unit tracking — tampilkan input jumlah
+    unitWrap.style.display = 'none';
+    jmlWrap.style.display  = 'block';
+    selUnit.required       = false;
+    jmlInput.required      = true;
+    selUnit.value          = '';
+  }
+}
+
+// ── Auto-trigger preselect dari scan QR ─────────────────
+(function() {
+  const sel    = document.getElementById('selectBarang');
+  const banner = document.getElementById('preselectBanner');
+  const namaEl = document.getElementById('preselectNama');
+
+  if (sel && sel.value) {
+    // Barang sudah terpilih — trigger info dan update banner
+    updateInfoBarang();
+
+    if (banner && namaEl) {
+      const opt = sel.options[sel.selectedIndex];
+      if (opt && opt.value) {
+        namaEl.textContent =
+          `[${opt.dataset.kode}] ${opt.dataset.nama} — ${opt.dataset.tipe || opt.dataset.kode}`;
+      } else {
+        // Fallback: cari option yang matching preselect_id
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === sel.value) {
+            namaEl.textContent =
+              `[${sel.options[i].dataset.kode}] ${sel.options[i].dataset.nama}`;
+            break;
+          }
+        }
+      }
+    }
+
+    // Scroll form ke atas agar banner terlihat
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateUnitSelector();
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+})();
+
 // ── Info Barang ──────────────────────────────────────────
 function updateInfoBarang() {
   const sel = document.getElementById('selectBarang');
@@ -272,7 +370,7 @@ function updateInfoBarang() {
   const inp = document.getElementById('jumlahPinjam');
   if (!sel.value) { box.style.display='none'; return; }
   box.style.display = 'flex';
-  txt.textContent = `${opt.dataset.nama} [${opt.dataset.kode}] · ${opt.dataset.tipe}`;
+  txt.textContent = `${opt.dataset.nama} [${opt.dataset.kode}] · ${opt.dataset.tipe} · Stok tersedia: ${opt.dataset.jumlah} unit`;
   inp.max = parseInt(opt.dataset.jumlah);
 }
 
