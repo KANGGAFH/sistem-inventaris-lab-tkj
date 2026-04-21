@@ -16,7 +16,7 @@
 
 ---
 
-*Proyek Kerja Praktek (KP) — Semester 6 — Universitas Pelita Bangsa Megah — 2024*
+*Proyek Kerja Praktek (KP) — Semester 6 — Universitas Pelita Bangsa — 2024*
 
 </div>
 
@@ -151,7 +151,7 @@ lab_inventory/
 │   ├── js/main.js                  # JavaScript global
 │   ├── img/
 │   │   ├── icon_sekolah.png        # Logo SMKN 1 Cikarang Selatan
-│   │   └── logo_universitas.png    # Logo Universitas Pelita Bangsa Megah
+│   │   └── logo_universitas.png    # Logo Universitas Pelita Bangsa
 │   └── qr/                         # QR Code PNG (di-generate otomatis)
 │
 └── templates/
@@ -427,7 +427,7 @@ Endpoint API digunakan oleh scanner untuk mengambil data barang tanpa login.
 
 ## Tim Pengembang
 
-Dikembangkan sebagai tugas mata kuliah **Kerja Praktek (KP)** Semester 6 di **Universitas Pelita Bangsa Megah**.
+Dikembangkan sebagai tugas mata kuliah **Kerja Praktek (KP)** Semester 6 di **Universitas Pelita Bangsa**.
 
 | Nama | NIM | Peran |
 |---|---|---|
@@ -455,6 +455,6 @@ Dikembangkan sebagai tugas mata kuliah **Kerja Praktek (KP)** Semester 6 di **Un
 
 © 2024 SIM Lab TJKT — Proyek Kerja Praktek
 
-*SMKN 1 Cikarang Selatan · Universitas Pelita Bangsa Megah*
+*SMKN 1 Cikarang Selatan · Universitas Pelita Bangsa*
 
 </div>
