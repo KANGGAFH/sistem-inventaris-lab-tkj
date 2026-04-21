@@ -429,13 +429,12 @@ Endpoint API digunakan oleh scanner untuk mengambil data barang tanpa login.
 
 Dikembangkan sebagai tugas mata kuliah **Kerja Praktek (KP)** Semester 6 di **Universitas Pelita Bangsa**.
 
-| Nama | NIM | Peran |
-|---|---|---|
-| Ahmad Fauzi Ramadhan | 2211501001 | Perancangan Sistem — ERD, DFD, Wireframe, Waterfall |
-| Rizky Dwi Prasetyo | 2211501024 | Implementasi Backend — Flask, MySQL, QR, API |
-| Siti Nurhaliza | 2211501047 | Implementasi Frontend — Bootstrap, Chart.js, Scanner |
+| Nama | NIM | 
+|---|---|
+| Kangga Fajarulhakim | 312310430 |
+| Yahya Ramadhan | 312310401 |
+| Rahmat Unsar | 312310442 |
 
-**Dosen Pembimbing:** Dr. Budi Santoso, M.Kom.
 
 **Sekolah Mitra:** SMKN 1 Cikarang Selatan, Bekasi — Lab TJKT
 
@@ -453,7 +452,7 @@ Dikembangkan sebagai tugas mata kuliah **Kerja Praktek (KP)** Semester 6 di **Un
 
 <div align="center">
 
-© 2024 SIM Lab TJKT — Proyek Kerja Praktek
+© 2026 SIM Lab TJKT — Proyek Kerja Praktek
 
 *SMKN 1 Cikarang Selatan · Universitas Pelita Bangsa*
 
