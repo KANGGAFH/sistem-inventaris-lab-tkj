@@ -6,3 +6,5 @@ TODO.md
 TODO_filter_waktu.md
 launcher.py
 icon_sekolah.ico
+__pycache__/
+*.pyc
